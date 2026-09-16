@@ -88,6 +88,7 @@ class OrgMatch extends Equatable {
     this.location,
     this.addressLine,
     this.contract,
+    this.requestStatus,
   });
 
   final String id;
@@ -115,6 +116,9 @@ class OrgMatch extends Equatable {
   final String? addressLine;
 
   final OrgMatchContract? contract;
+
+  /// Situação da solicitação (`SEARCHING`, `PENDING`, …, `CANCELED`).
+  final String? requestStatus;
 
   factory OrgMatch.fromJson(Map<String, dynamic> json) {
     final request = json['request'] as Map<String, dynamic>? ?? const {};
@@ -146,6 +150,7 @@ class OrgMatch extends Equatable {
       contract: OrgMatchContract.fromJson(
         json['contract'] as Map<String, dynamic>?,
       ),
+      requestStatus: request['status'] as String?,
     );
   }
 
@@ -160,7 +165,9 @@ class OrgMatch extends Equatable {
 
   /// Há uma data combinada ou pedida para o trabalho.
   bool get hasAgreedDate =>
-      contract?.startDate != null || proposedDate != null || scheduledAt != null;
+      contract?.startDate != null ||
+      proposedDate != null ||
+      scheduledAt != null;
 
   /// Quando o trabalho acontece — ou, sem data, quando o chamado chegou.
   DateTime get when =>
@@ -173,6 +180,11 @@ class OrgMatch extends Equatable {
   }
 
   JobStage get stage {
+    // Dados antigos podem manter o match pendente após a solicitação fechar.
+    if (!isRequestOpenForResponses(requestStatus) &&
+        status != MatchStatus.hired) {
+      return JobStage.closed;
+    }
     switch (status) {
       case MatchStatus.pending:
         return JobStage.awaitingResponse;
@@ -217,6 +229,7 @@ class OrgMatch extends Equatable {
     location,
     addressLine,
     contract,
+    requestStatus,
   ];
 }
 

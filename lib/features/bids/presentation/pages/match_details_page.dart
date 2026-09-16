@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
@@ -37,6 +38,7 @@ class MatchDetailsPage extends StatefulWidget {
 class _MatchDetailsPageState extends State<MatchDetailsPage> {
   final dataSource = sl<BidRemoteDataSource>();
   ServiceRequestDetailModel? _request;
+  String? _error;
   bool _loading = true;
   bool _acting = false;
 
@@ -52,12 +54,27 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       if (!mounted) return;
       setState(() {
         _request = data;
+        _error = null;
         _loading = false;
       });
     } catch (e) {
       debugPrint('Erro ao buscar detalhes: $e');
-      if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+      // O motivo vem do servidor (verificação pendente, chamado que não é da
+      // organização…); a frase genérica de antes escondia a causa.
+      setState(() {
+        _request = null;
+        _error = e is ApiException
+            ? e.message
+            : 'Tente abrir o chamado novamente.';
+        _loading = false;
+      });
     }
+  }
+
+  Future<void> _retry() async {
+    setState(() => _loading = true);
+    await _fetchDetails();
   }
 
   MatchInfo? get _match {
@@ -76,10 +93,12 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       body: _loading
           ? const Center(child: AppLoader())
           : req == null
-          ? const AppEmptyState(
+          ? AppEmptyState(
               icon: LucideIcons.triangle_alert,
               title: 'Não foi possível carregar',
-              description: 'Tente abrir o chamado novamente.',
+              description: _error ?? 'Tente abrir o chamado novamente.',
+              actionLabel: 'Tentar de novo',
+              onAction: _retry,
             )
           : Column(
               children: [
@@ -95,10 +114,11 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
   Widget _buildActions() {
     final match = _match;
     if (match == null) return const SizedBox.shrink();
+    final isOpen = _request?.isOpenForResponses ?? false;
 
     final Widget? actions;
 
-    if (match.status.awaitsDecision) {
+    if (isOpen && match.status.awaitsDecision) {
       actions = Row(
         children: [
           Expanded(
@@ -118,12 +138,12 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           ),
         ],
       );
-    } else if (match.status.canBid) {
+    } else if (isOpen && match.status.canBid) {
       actions = AppPrimaryButton(
         label: match.hasBid ? 'Editar devolutiva' : 'Enviar devolutiva',
         onPressed: _acting ? null : _openBid,
       );
-    } else if (match.status == MatchStatus.hired && match.contract != null) {
+    } else if (match.contract != null) {
       // Depois da escolha, o próximo passo é o contrato — é ele que
       // formaliza preço, prazo e garantia entre as duas partes.
       actions = AppPrimaryButton(
@@ -163,8 +183,22 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            _headline(req),
+            style: AppTypography.h3.copyWith(color: colors.textPrimary),
+          ),
+          if (_subtitle(req) case final subtitle?) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              subtitle,
+              style: AppTypography.bodySmall.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
           if (match != null) ...[
-            _MatchStatusCard(status: match.status),
+            _MatchStatusCard(status: match.status, requestStatus: req.status),
             const SizedBox(height: AppSpacing.md),
           ],
           if (match?.contract case final contract?) ...[
@@ -389,6 +423,23 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
     );
   }
 
+  /// O título da triagem; sem ele, a categoria.
+  String _headline(ServiceRequestDetailModel req) {
+    final title = req.title?.trim();
+    if (title != null && title.isNotEmpty) return title;
+    return req.categoryLabel ?? 'Chamado';
+  }
+
+  /// "Tecnologia · Pinheiros, São Paulo - SP": o que dá para saber de relance.
+  String? _subtitle(ServiceRequestDetailModel req) {
+    final hasTitle = req.title?.trim().isNotEmpty ?? false;
+    final parts = [
+      if (hasTitle && req.categoryLabel != null) req.categoryLabel!,
+      if (req.location != null) req.location!,
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
   String _formatDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
@@ -423,9 +474,11 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       await _fetchDetails();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao aceitar o chamado: $e')),
-      );
+      await _fetchDetails();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao aceitar o chamado: $e')));
     } finally {
       if (mounted) setState(() => _acting = false);
     }
@@ -457,7 +510,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     setState(() => _acting = true);
     try {
@@ -466,9 +519,11 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao recusar o chamado: $e')),
-      );
+      await _fetchDetails();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao recusar o chamado: $e')));
       setState(() => _acting = false);
     }
   }
@@ -494,11 +549,11 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
         '${km.toStringAsFixed(1).replaceAll('.', ',')} km de você';
   }
 
-  void _openBid() {
+  Future<void> _openBid() async {
     final match = _match;
     if (match == null) return;
 
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ResponsePage(
           serviceMatchId: match.id,
@@ -509,11 +564,11 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           initialQuestion: match.proQuestion,
           onSubmitted: () {
             Navigator.of(context).pop();
-            _fetchDetails();
           },
         ),
       ),
     );
+    if (mounted) await _fetchDetails();
   }
 }
 
@@ -523,42 +578,66 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
 /// descrição de serviço é uma oferta em aberto, um compromisso assumido ou um
 /// registro morto, dependendo daqui.
 class _MatchStatusCard extends StatelessWidget {
-  const _MatchStatusCard({required this.status});
+  const _MatchStatusCard({required this.status, required this.requestStatus});
 
   final MatchStatus status;
+  final String requestStatus;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    final (Color color, String label, String support) = switch (status) {
-      MatchStatus.pending => (
+    final (Color color, String label, String support) = switch ((
+      requestStatus,
+      status,
+    )) {
+      ('CANCELED', _) => (
+        colors.textHint,
+        'Solicitação cancelada',
+        'Este serviço foi encerrado. Os detalhes ficam disponíveis para consulta.',
+      ),
+      ('COMPLETED', _) => (
+        colors.success,
+        'Serviço concluído',
+        'A conclusão foi confirmada pelo cliente.',
+      ),
+      ('IN_PROGRESS', _) => (
+        colors.info,
+        'Serviço em andamento',
+        'Acompanhe o andamento e a conclusão pelo contrato.',
+      ),
+      ('ACCEPTED', MatchStatus.pending || MatchStatus.accepted) => (
+        colors.textHint,
+        'Solicitação já preenchida',
+        'O cliente já escolheu um profissional para este serviço.',
+      ),
+      (_, MatchStatus.pending) => (
         colors.warning,
         'Aguardando você',
         'Aceite para entrar na lista do cliente. O valor pode vir depois.',
       ),
-      MatchStatus.accepted => (
+      (_, MatchStatus.accepted) => (
         colors.info,
         'Você aceitou',
         'O cliente ainda está escolhendo. Uma devolutiva ajuda a decidir.',
       ),
-      MatchStatus.hired => (
+      (_, MatchStatus.hired) => (
         colors.success,
         'Você foi escolhido',
         'O cliente fechou com você. Complete os termos e envie o contrato '
             'para formalizar o serviço.',
       ),
-      MatchStatus.declined => (
+      (_, MatchStatus.declined) => (
         colors.textHint,
         'Você recusou',
         'Este chamado não está mais na sua lista.',
       ),
-      MatchStatus.rejected => (
+      (_, MatchStatus.rejected) => (
         colors.textHint,
         'Cliente descartou',
         'O cliente seguiu com outras opções.',
       ),
-      MatchStatus.ignored => (
+      (_, MatchStatus.ignored) => (
         colors.textHint,
         'Cliente escolheu outro',
         'A solicitação foi fechada com outro profissional.',

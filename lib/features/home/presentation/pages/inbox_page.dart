@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -55,6 +56,17 @@ class NotificationItem {
     NotificationType.proposalApproved => LucideIcons.badge_check,
     NotificationType.contract => LucideIcons.file_text,
   };
+
+  NotificationItem copyAsRead() => NotificationItem(
+    id: id,
+    personName: personName,
+    type: type,
+    dateTime: dateTime,
+    isUnread: false,
+    serviceRequestId: serviceRequestId,
+    contractId: contractId,
+    serverTitle: serverTitle,
+  );
 }
 
 class InboxPage extends StatefulWidget {
@@ -70,6 +82,8 @@ class _InboxPageState extends State<InboxPage> {
   );
   List<NotificationItem> _notifications = [];
   bool _loading = true;
+  bool _fetching = false;
+  String? _error;
   Timer? _pollTimer;
 
   @override
@@ -88,23 +102,36 @@ class _InboxPageState extends State<InboxPage> {
   }
 
   Future<void> _fetchNotifications() async {
+    if (_fetching) return;
+    _fetching = true;
     try {
       final models = await _dataSource.fetchAll();
       if (!mounted) return;
       setState(() {
         _notifications = models.map(_toNotificationItem).toList();
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       debugPrint('Erro ao buscar notificações: $e');
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e is ApiException
+              ? e.message
+              : 'Não foi possível carregar as notificações. Tente novamente.';
+        });
+      }
+    } finally {
+      _fetching = false;
     }
   }
 
   NotificationItem _toNotificationItem(NotificationModel model) {
     final type = switch (model.type) {
       'MATCH' => NotificationType.match,
-      final value when value.startsWith('CONTRACT_') => NotificationType.contract,
+      final value when value.startsWith('CONTRACT_') =>
+        NotificationType.contract,
       _ => NotificationType.proposalApproved,
     };
     return NotificationItem(
@@ -128,6 +155,15 @@ class _InboxPageState extends State<InboxPage> {
     }
 
     if (_notifications.isEmpty) {
+      if (_error != null) {
+        return AppEmptyState(
+          icon: LucideIcons.triangle_alert,
+          title: 'Não foi possível carregar',
+          description: _error!,
+          actionLabel: 'Tentar de novo',
+          onAction: _fetchNotifications,
+        );
+      }
       return const AppEmptyState(
         icon: LucideIcons.inbox,
         title: 'Nenhuma notificação',
@@ -138,21 +174,25 @@ class _InboxPageState extends State<InboxPage> {
 
     final grouped = _groupByDay(_notifications);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenH,
-        AppSpacing.xs,
-        AppSpacing.screenH,
-        // Espaço para a barra de navegação flutuante.
-        120,
-      ),
-      children: [
-        for (final group in grouped) ...[
-          _buildDayHeader(colors, group.date),
-          for (final notification in group.items)
-            _buildNotification(colors, notification),
+    return RefreshIndicator(
+      onRefresh: _fetchNotifications,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenH,
+          AppSpacing.xs,
+          AppSpacing.screenH,
+          // Espaço para a barra de navegação flutuante.
+          120,
+        ),
+        children: [
+          for (final group in grouped) ...[
+            _buildDayHeader(colors, group.date),
+            for (final notification in group.items)
+              _buildNotification(colors, notification),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -200,6 +240,47 @@ class _InboxPageState extends State<InboxPage> {
     );
   }
 
+  /// Abre o que o aviso anuncia e o marca como lido — antes nenhum aviso
+  /// saía de "não lido", e o contador da home só crescia.
+  Future<void> _open(NotificationItem item) async {
+    final contractId = item.contractId;
+    final requestId = item.serviceRequestId;
+    final Widget? page = contractId != null && contractId.isNotEmpty
+        ? ContractDetailPage(contractId: contractId)
+        : requestId != null && requestId.isNotEmpty
+        ? MatchDetailsPage(serviceRequestId: requestId)
+        : null;
+    if (page == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Esta notificação não tem um serviço vinculado.'),
+        ),
+      );
+      return;
+    }
+    if (item.isUnread != false) {
+      setState(() {
+        _notifications = [
+          for (final n in _notifications) n.id == item.id ? n.copyAsRead() : n,
+        ];
+      });
+      unawaited(
+        _dataSource.markAsRead(item.id).catchError((Object e) {
+          debugPrint('Erro ao marcar notificação como lida: $e');
+        }),
+      );
+    }
+
+    // Aviso ligado a contrato (inclusive "o cliente escolheu você") abre o
+    // contrato: é lá que está o próximo passo. Os demais abrem o chamado —
+    // todos, não só o de chamado novo: devolutiva, avisos de contrato sem o
+    // id e os mais antigos também têm a solicitação.
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => page));
+    if (mounted) _fetchNotifications();
+  }
+
   Widget _buildNotification(AppColorsTheme colors, NotificationItem item) {
     final hour = item.dateTime.hour.toString().padLeft(2, '0');
     final minute = item.dateTime.minute.toString().padLeft(2, '0');
@@ -207,29 +288,7 @@ class _InboxPageState extends State<InboxPage> {
     final isUnread = item.isUnread != false;
 
     return GestureDetector(
-      onTap: () {
-        // Aviso ligado a contrato (inclusive "o cliente escolheu você") abre
-        // o contrato: é lá que está o próximo passo.
-        if (item.contractId != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ContractDetailPage(contractId: item.contractId!),
-            ),
-          );
-          return;
-        }
-
-        if (item.type == NotificationType.match &&
-            item.serviceRequestId != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => MatchDetailsPage(
-                serviceRequestId: item.serviceRequestId!,
-              ),
-            ),
-          );
-        }
-      },
+      onTap: () => _open(item),
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.xs),
         child: Container(

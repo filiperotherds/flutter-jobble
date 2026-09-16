@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
@@ -44,10 +45,16 @@ class ResponsePage extends StatefulWidget {
 
 class _MoneyInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (digits.isEmpty) {
-      return const TextEditingValue(text: '0,00', selection: TextSelection.collapsed(offset: 4));
+      return const TextEditingValue(
+        text: '0,00',
+        selection: TextSelection.collapsed(offset: 4),
+      );
     }
     final cents = int.parse(digits);
     final display = (cents / 100).toStringAsFixed(2).replaceFirst('.', ',');
@@ -109,10 +116,14 @@ class _ResponsePageState extends State<ResponsePage> {
   }
 
   Future<void> _pickDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final selected = _selectedDate;
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
+      initialDate: selected != null && !selected.isBefore(today)
+          ? selected
+          : today.add(const Duration(days: 1)),
+      firstDate: today,
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date != null) {
@@ -121,7 +132,9 @@ class _ResponsePageState extends State<ResponsePage> {
         context: context,
         initialTime:
             _selectedTime ??
-            TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 8))),
+            TimeOfDay.fromDateTime(
+              DateTime.now().add(const Duration(hours: 8)),
+            ),
       );
       if (time != null && mounted) {
         setState(() {
@@ -133,6 +146,7 @@ class _ResponsePageState extends State<ResponsePage> {
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
     if (!_formKey.currentState!.validate()) return;
 
     final question = _questionController.text.trim();
@@ -148,7 +162,9 @@ class _ResponsePageState extends State<ResponsePage> {
       return;
     }
 
-    if (_hasValue && !_isImmediate && (_selectedDate == null || _selectedTime == null)) {
+    if (_hasValue &&
+        !_isImmediate &&
+        (_selectedDate == null || _selectedTime == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione a data de atendimento')),
       );
@@ -159,7 +175,10 @@ class _ResponsePageState extends State<ResponsePage> {
 
     try {
       String? proposedDate;
-      if (_hasValue && !_isImmediate && _selectedDate != null && _selectedTime != null) {
+      if (_hasValue &&
+          !_isImmediate &&
+          _selectedDate != null &&
+          _selectedTime != null) {
         final dateTime = DateTime(
           _selectedDate!.year,
           _selectedDate!.month,
@@ -167,13 +186,15 @@ class _ResponsePageState extends State<ResponsePage> {
           _selectedTime!.hour,
           _selectedTime!.minute,
         );
-        proposedDate = dateTime.toIso8601String();
+        proposedDate = dateTime.toUtc().toIso8601String();
       }
 
       await dataSource.sendBid(
         serviceMatchId: widget.serviceMatchId,
         bidValue: _hasValue ? _cents / 100.0 : null,
-        serviceType: _hasValue ? (_isImmediate ? 'IMMEDIATE' : 'SCHEDULED') : null,
+        serviceType: _hasValue
+            ? (_isImmediate ? 'IMMEDIATE' : 'SCHEDULED')
+            : null,
         proposedDate: proposedDate,
         question: question.isEmpty ? null : question,
       );
@@ -185,9 +206,12 @@ class _ResponsePageState extends State<ResponsePage> {
       widget.onSubmitted();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao enviar devolutiva: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao enviar devolutiva: $e')));
+      if (e is ApiException && e.statusCode == 403) {
+        Navigator.of(context).pop();
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -260,7 +284,9 @@ class _ResponsePageState extends State<ResponsePage> {
                   validator: (v) {
                     if (!_hasValue) return null;
                     if (v == null || v.trim().isEmpty) return 'Informe o valor';
-                    final parsed = double.tryParse(v.trim().replaceAll(',', '.'));
+                    final parsed = double.tryParse(
+                      v.trim().replaceAll(',', '.'),
+                    );
                     if (parsed == null || parsed <= 0) return 'Valor inválido';
                     return null;
                   },
@@ -372,5 +398,4 @@ class _ResponsePageState extends State<ResponsePage> {
     final minute = time.minute.toString().padLeft(2, '0');
     return '$day/$month/${date.year} às ${hour}h$minute';
   }
-
 }

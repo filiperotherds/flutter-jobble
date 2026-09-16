@@ -37,3 +37,9 @@ class AuthSignupStep1Success extends AuthState {}
 class AuthVerificationSuccess extends AuthState {}
 
 class AuthOnboardingSuccess extends AuthState {}
+
+class AuthLoggedOut extends AuthInitial {}
+
+class AuthLogoutFailure extends AuthState {}
+
+class AuthLoggingOut extends AuthState {}

@@ -63,10 +63,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<void> updateOrganizationName(String name) async {
     try {
-      await dioClient.dio.patch(
-        '/organizations/name',
-        data: {'name': name},
-      );
+      await dioClient.dio.patch('/organizations/name', data: {'name': name});
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
         final message = e.response?.data['message'];
@@ -81,10 +78,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<void> updateUserName(String name) async {
     try {
-      await dioClient.dio.patch(
-        '/users/profile',
-        data: {'name': name},
-      );
+      await dioClient.dio.put('/users/me/legal-profile', data: {'name': name});
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
         final message = e.response?.data['message'];

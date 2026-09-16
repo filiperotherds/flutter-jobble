@@ -4,6 +4,7 @@ import 'package:flutter_tcc/features/bids/data/models/org_match_model.dart';
 
 Map<String, dynamic> _match({
   String status = 'PENDING',
+  String requestStatus = 'PENDING',
   Map<String, dynamic>? contract,
   bool revealed = false,
   double? bidValue,
@@ -18,6 +19,7 @@ Map<String, dynamic> _match({
     'createdAt': '2026-09-15T12:00:00.000Z',
     'request': {
       'id': 'r1',
+      'status': requestStatus,
       'title': 'Troca de chuveiro',
       'description': 'O chuveiro parou de esquentar',
       'categoryLabel': 'Elétrica',
@@ -48,19 +50,40 @@ Map<String, dynamic> _match({
   };
 }
 
-Map<String, dynamic> _contract(String status, {int? priceCents, String? startDate}) =>
-    {
-      'id': 'c1',
-      'code': 'JB-2026-0001',
-      'status': status,
-      'priceCents': priceCents,
-      'startDate': startDate,
-    };
+Map<String, dynamic> _contract(
+  String status, {
+  int? priceCents,
+  String? startDate,
+}) => {
+  'id': 'c1',
+  'code': 'JB-2026-0001',
+  'status': status,
+  'priceCents': priceCents,
+  'startDate': startDate,
+};
 
 void main() {
   group('etapa do trabalho', () {
     test('chamado novo pede resposta', () {
       expect(OrgMatch.fromJson(_match()).stage, JobStage.awaitingResponse);
+    });
+
+    test('solicitações fechadas não pedem aceite nem devolutiva', () {
+      for (final requestStatus in [
+        'ACCEPTED',
+        'IN_PROGRESS',
+        'COMPLETED',
+        'CANCELED',
+      ]) {
+        for (final status in ['PENDING', 'ACCEPTED']) {
+          expect(
+            OrgMatch.fromJson(
+              _match(status: status, requestStatus: requestStatus),
+            ).stage,
+            JobStage.closed,
+          );
+        }
+      }
     });
 
     test('aceito espera a escolha do cliente', () {
@@ -94,7 +117,10 @@ void main() {
 
     test('recusado, descartado ou preterido sai da lista', () {
       for (final status in ['DECLINED', 'REJECTED', 'IGNORED']) {
-        expect(OrgMatch.fromJson(_match(status: status)).stage, JobStage.closed);
+        expect(
+          OrgMatch.fromJson(_match(status: status)).stage,
+          JobStage.closed,
+        );
       }
     });
   });

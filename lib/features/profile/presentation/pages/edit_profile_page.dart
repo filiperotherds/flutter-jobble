@@ -16,6 +16,7 @@ import 'package:flutter_tcc/core/widgets/profile_avatar.dart';
 import 'package:flutter_tcc/injection_container.dart' as di;
 import 'package:flutter_tcc/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/edit_field_page.dart';
+import 'package:flutter_tcc/features/legal/presentation/pages/legal_profile_page.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -215,22 +216,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   AppListRow(
                     title: 'Nome',
                     value: userName,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => EditFieldPage(
-                            title: 'Editar nome',
-                            fieldLabel: 'Nome',
-                            currentValue: userName,
-                            onSave: (value) async {
-                              await _dataSource.updateUserName(value);
-                              if (!context.mounted) return;
-                              context.read<AuthBloc>().add(UserRequested());
-                            },
-                          ),
+                          builder: (_) => const LegalProfilePage(),
                         ),
                       );
+                      if (!context.mounted) return;
+                      context.read<AuthBloc>().add(UserRequested());
                     },
                   ),
                   AppListRow(title: 'E-mail', value: email),

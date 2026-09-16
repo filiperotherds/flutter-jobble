@@ -27,15 +27,6 @@ class DioClient {
           }
           return handler.next(options);
         },
-        onError: (error, handler) async {
-          if (error.type == DioExceptionType.connectionTimeout ||
-              error.type == DioExceptionType.receiveTimeout ||
-              error.type == DioExceptionType.sendTimeout ||
-              error.type == DioExceptionType.connectionError) {
-            await tokenService.deleteToken();
-          }
-          return handler.next(error);
-        },
       ),
     );
 

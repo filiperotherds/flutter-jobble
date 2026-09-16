@@ -6,6 +6,9 @@
 /// falso, e nome, e-mail, rua e número nem chegam do servidor.
 class ServiceRequestDetailModel {
   final String id;
+
+  /// Título curto gerado na triagem. Solicitações antigas não têm.
+  final String? title;
   final String description;
   final String? categoryLabel;
   final String status;
@@ -20,8 +23,11 @@ class ServiceRequestDetailModel {
   final String? location;
   final List<MatchInfo> professionalMatches;
 
+  bool get isOpenForResponses => isRequestOpenForResponses(status);
+
   ServiceRequestDetailModel({
     required this.id,
+    this.title,
     required this.description,
     this.categoryLabel,
     required this.status,
@@ -38,14 +44,13 @@ class ServiceRequestDetailModel {
   factory ServiceRequestDetailModel.fromJson(Map<String, dynamic> json) {
     return ServiceRequestDetailModel(
       id: json['id'] as String,
+      title: json['title'] as String?,
       description: json['description'] as String,
       categoryLabel: json['categoryLabel'] as String?,
       status: json['status'] as String,
-      isEmergency: json['isEmergency'] as bool,
-      scheduledAt: json['scheduledAt'] != null
-          ? DateTime.parse(json['scheduledAt'] as String)
-          : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      isEmergency: json['isEmergency'] as bool? ?? false,
+      scheduledAt: _localDate(json['scheduledAt']),
+      createdAt: _localDate(json['createdAt']) ?? DateTime.now(),
       // Backend anterior à regra de privacidade não manda o campo, mas
       // manda o nome: nesse caso, o que veio é o que há.
       clientRevealed:
@@ -63,6 +68,10 @@ class ServiceRequestDetailModel {
   }
 }
 
+/// Só estes estados permitem aceitar, recusar ou enviar uma devolutiva.
+bool isRequestOpenForResponses(String? status) =>
+    status == 'SEARCHING' || status == 'PENDING';
+
 class ClientInfo {
   final String? id;
   final String? name;
@@ -72,12 +81,7 @@ class ClientInfo {
   /// antes e depois da escolha: dizer que é verificado não diz quem é.
   final bool identityVerified;
 
-  ClientInfo({
-    this.id,
-    this.name,
-    this.email,
-    this.identityVerified = false,
-  });
+  ClientInfo({this.id, this.name, this.email, this.identityVerified = false});
 
   factory ClientInfo.fromJson(Map<String, dynamic> json) {
     return ClientInfo(
@@ -238,12 +242,8 @@ class MatchInfo {
       status: MatchStatus.fromJson(json['status'] as String?),
       bidValue: (json['bidValue'] as num?)?.toDouble(),
       serviceType: json['serviceType'] as String?,
-      proposedDate: json['proposedDate'] != null
-          ? DateTime.parse(json['proposedDate'] as String)
-          : null,
-      respondedAt: json['respondedAt'] != null
-          ? DateTime.parse(json['respondedAt'] as String)
-          : null,
+      proposedDate: _localDate(json['proposedDate']),
+      respondedAt: _localDate(json['respondedAt']),
       proQuestion: json['proQuestion'] as String?,
       clientDetails: json['clientDetails'] as String?,
       similarityScore: (json['similarityScore'] as num?)?.toDouble(),
@@ -254,3 +254,8 @@ class MatchInfo {
     );
   }
 }
+
+/// O servidor manda UTC. Sem `toLocal`, um serviço às 22h de Brasília
+/// aparecia marcado para o dia seguinte.
+DateTime? _localDate(Object? value) =>
+    value is String ? DateTime.tryParse(value)?.toLocal() : null;

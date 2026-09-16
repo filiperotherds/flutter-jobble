@@ -38,7 +38,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignupSubmitted>(_onSignupSubmitted);
     on<EmailVerificationSubmitted>(_onEmailVerificationSubmitted);
     on<CompleteOnboardingSubmitted>(_onCompleteOnboardingSubmitted);
-    on<UpdateOrganizationProfileSubmitted>(_onUpdateOrganizationProfileSubmitted);
+    on<UpdateOrganizationProfileSubmitted>(
+      _onUpdateOrganizationProfileSubmitted,
+    );
     on<ResendVerificationEmailRequested>(_onResendVerificationEmailRequested);
     on<UserRequested>(_onUserRequested);
     on<LogoutRequested>(_onLogoutRequested);
@@ -50,8 +52,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await tokenService.deleteToken();
-    emit(AuthInitial());
+    emit(AuthLoggingOut());
+    try {
+      await tokenService.deleteToken();
+      emit(AuthLoggedOut());
+    } catch (_) {
+      emit(AuthLogoutFailure());
+    }
   }
 
   Future<void> _onConnectionErrorLogoutRequested(
@@ -81,7 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await loginUseCase.execute(event.email, event.password);
       await tokenService.saveToken(result.accessToken);
-      
+
       final user = await getMeUseCase.execute();
       emit(AuthSuccess(accessToken: result.accessToken, user: user));
     } catch (e) {
@@ -175,7 +182,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     final currentState = state;
     String? token;
-    
+
     if (currentState is AuthSuccess) {
       token = currentState.accessToken;
     } else {
@@ -224,7 +231,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         organizationId: user.organizationId,
         organization: updatedOrg,
       );
-      emit(AuthSuccess(accessToken: currentState.accessToken, user: updatedUser));
+      emit(
+        AuthSuccess(accessToken: currentState.accessToken, user: updatedUser),
+      );
     }
   }
 }

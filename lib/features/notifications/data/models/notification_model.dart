@@ -33,7 +33,9 @@ class NotificationModel {
       serviceRequestId: json['serviceRequestId'] as String?,
       contractId: json['contractId'] as String?,
       isUnread: json['isUnread'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      // O servidor manda UTC; sem `toLocal` o horário e o agrupamento por
+      // dia saíam três horas adiantados.
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
     );
   }
 }
