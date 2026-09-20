@@ -31,7 +31,11 @@ import 'package:flutter_tcc/injection_container.dart';
 /// até a conta ser liberada — sem voltar, com saída da conta. Fora dela, é o
 /// destino de todo "complete seu cadastro" do app.
 class VerificationCenterPage extends StatefulWidget {
-  const VerificationCenterPage({super.key, this.asGate = false, this.onChanged});
+  const VerificationCenterPage({
+    super.key,
+    this.asGate = false,
+    this.onChanged,
+  });
 
   final bool asGate;
 

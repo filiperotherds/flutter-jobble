@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
@@ -71,7 +72,7 @@ class _EditFieldPageState extends State<EditFieldPage> {
         leading: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: AppCircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: LucideIcons.arrow_left,
             tooltip: 'Voltar',
             onPressed: () => Navigator.pop(context),
           ),

@@ -33,9 +33,6 @@ class AppTabItem {
 
 /// Barra de abas inferior do sistema: faixa de largura total em vidro
 /// (branco a 72% sobre desfoque de 18), com borda fina no topo.
-///
-/// O item ativo fica em floresta com o ícone numa pílula lima pálida — lima é
-/// a cor de estado ativo; os inativos ficam em cinza claro.
 class AppTabBar extends StatelessWidget {
   const AppTabBar({
     super.key,
@@ -57,7 +54,9 @@ class AppTabBar extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: colors.surface.withValues(alpha: 0.72),
+            color: colors.surface.withValues(
+              alpha: 0.95,
+            ), // Deixando mais branco sólido igual iFood
             border: Border(
               top: BorderSide(color: colors.borderLight, width: AppSize.border),
             ),
@@ -109,29 +108,25 @@ class _TabButton extends StatelessWidget {
             size: 26,
             ringed: isActive,
           )
-        : AnimatedContainer(
-            duration: AppDuration.normal,
-            curve: AppCurve.standard,
+        : SizedBox(
             width: 48,
             height: 28,
-            decoration: BoxDecoration(
-              color: isActive ? colors.accentSoft : Colors.transparent,
-              borderRadius: AppRadius.pillAll,
-            ),
-            alignment: Alignment.center,
             child: Stack(
               clipBehavior: Clip.none,
+              alignment: Alignment.center,
               children: [
-                Icon(item.icon, size: 20, color: ink),
+                // Lucide é contorno puro: o estado ativo vem da cor e do
+                // peso do rótulo, não de uma variante preenchida do glifo.
+                Icon(item.icon, size: 24, color: ink),
                 if (item.badge > 0 && !isActive)
                   Positioned(
-                    right: -3,
-                    top: -2,
+                    right: 6,
+                    top: 0,
                     child: Container(
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: colors.accentText,
+                        color: colors.error,
                         shape: BoxShape.circle,
                         border: Border.all(color: colors.surface, width: 1.5),
                       ),
@@ -144,7 +139,9 @@ class _TabButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isActive,
-      label: item.badge > 0 ? '${item.label}, ${item.badge} não lidos' : item.label,
+      label: item.badge > 0
+          ? '${item.label}, ${item.badge} não lidos'
+          : item.label,
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/core/config/app_config.dart';
@@ -42,9 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenH,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
             child: Row(
               children: [
                 Expanded(
@@ -122,7 +121,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: SizedBox(
                     height: 260,
                     child: AppEmptyState(
-                      icon: Icons.photo_library_outlined,
+                      icon: LucideIcons.images,
                       title: 'Nenhum projeto ainda',
                       description:
                           'Os trabalhos que você publicar aparecem aqui.',
@@ -211,11 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             children: [
               const SizedBox(height: AppSpacing.md),
-              ProfileAvatar(
-                size: 88,
-                imageUrl: avatarUrl,
-                fallbackName: name,
-              ),
+              ProfileAvatar(size: 88, imageUrl: avatarUrl, fallbackName: name),
               const SizedBox(height: AppSpacing.md),
               Text(
                 name,

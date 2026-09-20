@@ -113,7 +113,9 @@ class LegalRemoteDataSource {
   Future<BackgroundCheckInfo> getBackgroundCheck() {
     return apiCall(() async {
       final response = await dioClient.dio.get('/background-check');
-      return BackgroundCheckInfo.fromJson(response.data as Map<String, dynamic>);
+      return BackgroundCheckInfo.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     });
   }
 
@@ -146,7 +148,9 @@ class LegalRemoteDataSource {
           receiveTimeout: const Duration(minutes: 1),
         ),
       );
-      return BackgroundCheckInfo.fromJson(response.data as Map<String, dynamic>);
+      return BackgroundCheckInfo.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     });
   }
 }

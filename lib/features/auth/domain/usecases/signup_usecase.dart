@@ -5,21 +5,7 @@ class SignupUseCase {
 
   SignupUseCase({required this.repository});
 
-  Future<void> execute(
-    String? name,
-    String email,
-    String password, {
-    String? cpf,
-    String? phone,
-    String? birthDate,
-  }) async {
-    await repository.signup(
-      name,
-      email,
-      password,
-      cpf: cpf,
-      phone: phone,
-      birthDate: birthDate,
-    );
+  Future<void> execute(String email, String password) async {
+    await repository.signup(email, password);
   }
 }

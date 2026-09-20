@@ -56,7 +56,9 @@ class PartyReadiness extends Equatable {
     return PartyReadiness(
       ready: json['ready'] as bool? ?? false,
       profileComplete: json['profileComplete'] as bool? ?? false,
-      identityStatus: IdentityStatus.fromJson(json['identityStatus'] as String?),
+      identityStatus: IdentityStatus.fromJson(
+        json['identityStatus'] as String?,
+      ),
       rejectionReason: json['rejectionReason'] as String?,
       missing: (json['missing'] as List? ?? const []).cast<String>(),
     );

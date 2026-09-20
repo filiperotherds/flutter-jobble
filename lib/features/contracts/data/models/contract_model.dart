@@ -280,7 +280,8 @@ class ContractSignatureInfo extends Equatable {
 
   factory ContractSignatureInfo.fromJson(Map<String, dynamic> json) =>
       ContractSignatureInfo(
-        party: ContractParty.fromJson(json['party'] as String?) ??
+        party:
+            ContractParty.fromJson(json['party'] as String?) ??
             ContractParty.client,
         signerName: json['signerName'] as String? ?? '',
         signedAt: _date(json['signedAt']) ?? DateTime.now(),
@@ -436,13 +437,11 @@ class ContractModel extends Equatable {
   bool hasSigned(ContractParty party) =>
       signatures.any((signature) => signature.party == party);
 
-  PartyReadiness get myReadiness => viewerParty == ContractParty.client
-      ? clientReadiness
-      : providerReadiness;
+  PartyReadiness get myReadiness =>
+      viewerParty == ContractParty.client ? clientReadiness : providerReadiness;
 
-  PartyReadiness get otherReadiness => viewerParty == ContractParty.client
-      ? providerReadiness
-      : clientReadiness;
+  PartyReadiness get otherReadiness =>
+      viewerParty == ContractParty.client ? providerReadiness : clientReadiness;
 
   factory ContractModel.fromJson(Map<String, dynamic> json) {
     final request = json['serviceRequest'] as Map<String, dynamic>? ?? const {};
@@ -456,11 +455,13 @@ class ContractModel extends Equatable {
       code: json['code'] as String? ?? '',
       status: ContractStatus.fromJson(json['status'] as String?),
       version: (json['version'] as num?)?.toInt() ?? 0,
-      viewerParty: ContractParty.fromJson(json['viewerParty'] as String?) ??
+      viewerParty:
+          ContractParty.fromJson(json['viewerParty'] as String?) ??
           ContractParty.provider,
       serviceRequestId: request['id'] as String?,
       serviceTitle:
-          (request['title'] as String?) ?? (request['description'] as String? ?? ''),
+          (request['title'] as String?) ??
+          (request['description'] as String? ?? ''),
       serviceDescription: request['description'] as String? ?? '',
       clientName: client['name'] as String? ?? 'Cliente',
       organizationName: organization['name'] as String? ?? 'Profissional',

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
-import 'package:flutter_tcc/core/utils/br_documents.dart';
+import 'package:flutter_tcc/core/theme/app_typography.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
-import 'package:flutter_tcc/features/legal/data/models/legal_models.dart';
-import 'package:flutter_tcc/core/widgets/step_progress.dart';
+import 'package:flutter_tcc/core/widgets/app_text_field.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
-import 'package:flutter_tcc/features/auth/presentation/widgets/signup_step_email.dart';
-import 'package:flutter_tcc/features/auth/presentation/widgets/signup_step_otp.dart';
-import 'package:flutter_tcc/features/auth/presentation/widgets/signup_step_profile.dart';
-import 'package:flutter_tcc/features/auth/presentation/pages/complete_profile_page.dart';
+import 'package:flutter_tcc/features/auth/presentation/widgets/auth_error_card.dart';
 import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
-import 'package:flutter_tcc/core/services/token_service.dart';
-import 'package:flutter_tcc/injection_container.dart' as di;
 
+/// Cadastro do profissional em uma etapa: e-mail e senha.
+///
+/// O que a Jobble precisa saber para liberar chamados — dados pessoais,
+/// empresa, documento e certidão de antecedentes — é o onboarding guiado,
+/// depois de entrar. Aqui a porta é só a porta.
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -26,116 +26,26 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  final PageController _pageController = PageController();
-  int _currentStep = 0;
-
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _cpfController = TextEditingController();
-  final TextEditingController _birthDateController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _orgNameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _documentController = TextEditingController();
-  final TextEditingController _legalNameController = TextEditingController();
-
-  final _cpfMask = BrMasks.cpf();
-  final _birthDateMask = BrMasks.date();
-  final _phoneMask = BrMasks.phone();
-  final _cnpjMask = BrMasks.cnpj();
-
-  final _step1FormKey = GlobalKey<FormState>();
-  final _step3FormKey = GlobalKey<FormState>();
-
-  OrganizationLegalType _legalType = OrganizationLegalType.individual;
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
-    _pageController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _nameController.dispose();
-    _cpfController.dispose();
-    _birthDateController.dispose();
-    _phoneController.dispose();
-    _orgNameController.dispose();
-    _descriptionController.dispose();
-    _documentController.dispose();
-    _legalNameController.dispose();
     super.dispose();
   }
 
-  void _onStep1Continue() {
-    if (!(_step1FormKey.currentState?.validate() ?? false)) return;
-
-    final birth = parseBrDate(_birthDateController.text)!;
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
 
     context.read<AuthBloc>().add(
       SignupSubmitted(
-        name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        password: _passwordController.text,
-        cpf: onlyDigits(_cpfController.text),
-        phone: onlyDigits(_phoneController.text),
-        // Meio-dia UTC: nascimento é um dia, e meia-noite local viraria o
-        // dia anterior no servidor.
-        birthDate: DateTime.utc(
-          birth.year,
-          birth.month,
-          birth.day,
-          12,
-        ).toIso8601String(),
-      ),
-    );
-  }
-
-  CompleteOnboardingSubmitted _onboardingEvent() {
-    final isCompany = _legalType == OrganizationLegalType.company;
-    return CompleteOnboardingSubmitted(
-      organizationName: _orgNameController.text.trim(),
-      description: _descriptionController.text,
-      legalType: _legalType.apiValue,
-      document: isCompany ? onlyDigits(_documentController.text) : null,
-      legalName: isCompany ? _legalNameController.text.trim() : null,
-    );
-  }
-
-  void _onStep2Continue(String code) {
-    context.read<AuthBloc>().add(
-      EmailVerificationSubmitted(email: _emailController.text, code: code),
-    );
-  }
-
-  void _nextPage() {
-    if (_currentStep < 2) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _previousPage() {
-    if (_currentStep > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      Navigator.of(context).pop();
-    }
-  }
-
-  void _onFinish() {
-    if (!(_step3FormKey.currentState?.validate() ?? false)) return;
-
-    context.read<AuthBloc>().add(
-      LoginSubmitted(
-        email: _emailController.text,
         password: _passwordController.text,
       ),
     );
@@ -143,127 +53,158 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    final colors = context.colors;
+
+    return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        // Conta criada: entra na sequência, sem pedir a senha de novo.
         if (state is AuthSignupStep1Success) {
-          _pageController.jumpToPage(2);
-        } else if (state is AuthVerificationSuccess) {
-          _nextPage();
-        } else if (state is AuthSuccess) {
-          final tokenService = di.sl<TokenService>();
-
-          final completed = tokenService.isOnboardingCompleted(
-            state.accessToken,
-          );
-
-          if (!completed && _currentStep == 2) {
-            context.read<AuthBloc>().add(_onboardingEvent());
-            return;
-          }
-
-          if (!mounted) return;
-
-          Widget nextStep;
-          if (!completed) {
-            nextStep = const CompleteProfilePage();
-          } else {
-            nextStep = const AccountGatePage();
-          }
-
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => nextStep),
-            (route) => false,
-          );
-        } else if (state is AuthOnboardingSuccess) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const AccountGatePage()),
-            (route) => false,
-          );
-        } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: context.colors.error,
+          context.read<AuthBloc>().add(
+            LoginSubmitted(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
             ),
+          );
+        } else if (state is AuthSuccess) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AccountGatePage()),
+            (route) => false,
           );
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          titleSpacing: AppSpacing.screenH,
-          centerTitle: false,
-          title: Row(
-            children: [
-              AppCircleIconButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                tooltip: 'Voltar',
-                onPressed: _previousPage,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              StepProgress(totalSteps: 3, currentStep: _currentStep + 1),
-            ],
-          ),
-        ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenH,
-              AppSpacing.xl,
-              AppSpacing.screenH,
-              AppSpacing.xl,
-            ),
-            child: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                final isLoading = state is AuthLoading;
+      builder: (context, state) {
+        final isLoading =
+            state is AuthLoading || state is AuthSignupStep1Success;
 
-                return PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (int page) {
-                    setState(() => _currentStep = page);
-                  },
+        return Scaffold(
+          appBar: AppBar(
+            titleSpacing: AppSpacing.screenH,
+            centerTitle: false,
+            automaticallyImplyLeading: false,
+            title: Row(
+              children: [
+                AppCircleIconButton(
+                  icon: LucideIcons.arrow_left,
+                  tooltip: 'Voltar',
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  'Criar conta',
+                  style: AppTypography.title.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                AppSpacing.xl,
+                AppSpacing.screenH,
+                AppSpacing.xxl,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SignupStepEmail(
-                      formKey: _step1FormKey,
-                      nameController: _nameController,
-                      cpfController: _cpfController,
-                      birthDateController: _birthDateController,
-                      phoneController: _phoneController,
-                      emailController: _emailController,
-                      passwordController: _passwordController,
-                      confirmPasswordController: _confirmPasswordController,
-                      cpfMask: _cpfMask,
-                      birthDateMask: _birthDateMask,
-                      phoneMask: _phoneMask,
-                      onContinue: _onStep1Continue,
-                      isLoading: isLoading && _currentStep == 0,
+                    Text(
+                      'Comece a receber chamados',
+                      style: AppTypography.h1.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                    SignupStepOtp(
-                      email: _emailController.text,
-                      onContinue: _onStep2Continue,
-                      isLoading: isLoading && _currentStep == 1,
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Crie a conta com e-mail e senha. Em seguida a gente '
+                      'monta seu perfil profissional junto com você.',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
-                    SignupStepProfile(
-                      formKey: _step3FormKey,
-                      orgNameController: _orgNameController,
-                      descriptionController: _descriptionController,
-                      legalType: _legalType,
-                      onLegalTypeChanged: (type) =>
-                          setState(() => _legalType = type),
-                      documentController: _documentController,
-                      legalNameController: _legalNameController,
-                      cnpjMask: _cnpjMask,
-                      onFinish: _onFinish,
-                      isLoading: isLoading && _currentStep == 2,
+                    const SizedBox(height: AppSpacing.xl),
+                    AppTextField(
+                      controller: _emailController,
+                      label: 'E-mail',
+                      hint: 'exemplo@email.com',
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
+                      validator: (value) {
+                        final email = (value ?? '').trim();
+                        if (email.isEmpty) return 'Informe seu e-mail';
+                        if (!email.contains('@')) return 'E-mail inválido';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _passwordController,
+                      label: 'Senha',
+                      obscureText: true,
+                      helper: 'Pelo menos 8 caracteres',
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
+                      validator: (value) => (value ?? '').length < 8
+                          ? 'A senha precisa de 8 caracteres'
+                          : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _confirmPasswordController,
+                      label: 'Confirme a senha',
+                      obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      validator: (value) => value != _passwordController.text
+                          ? 'As senhas não são iguais'
+                          : null,
+                    ),
+                    if (state is AuthFailure) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      AuthErrorCard(
+                        title: 'Não foi possível criar a conta',
+                        message: state.message,
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          LucideIcons.shield_check,
+                          size: 18,
+                          color: colors.textHint,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            'Para receber chamados pedimos seus dados, um '
+                            'documento com foto e a certidão de antecedentes. '
+                            'É o que dá segurança a quem contrata.',
+                            style: AppTypography.caption.copyWith(
+                              color: colors.textHint,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppPrimaryButton(
+                      label: 'Criar conta',
+                      isLoading: isLoading,
+                      onPressed: _submit,
                     ),
                   ],
-                );
-              },
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -21,11 +21,7 @@ class DatabaseHelper {
     String path = join(databasesPath, 'app_database.db');
 
     // Abre o banco de dados e cria as tabelas se não existirem
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
+    return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
   Future<void> _onCreate(Database db, int version) async {

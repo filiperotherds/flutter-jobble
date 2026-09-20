@@ -1,10 +1,7 @@
 import 'package:flutter_tcc/features/home/domain/entities/earnings_summary.dart';
 
 class EarningsSummaryModel extends EarningsSummary {
-  EarningsSummaryModel({
-    required super.totalEarnings,
-    required super.jobs,
-  });
+  EarningsSummaryModel({required super.totalEarnings, required super.jobs});
 
   factory EarningsSummaryModel.fromJson(Map<String, dynamic> json) {
     return EarningsSummaryModel(
@@ -14,9 +11,6 @@ class EarningsSummaryModel extends EarningsSummary {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'totalEarnings': totalEarnings,
-      'jobs': jobs,
-    };
+    return {'totalEarnings': totalEarnings, 'jobs': jobs};
   }
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-final _format = NumberFormat.currency(locale: 'pt_BR', symbol: '', decimalDigits: 2);
+final _format = NumberFormat.currency(
+  locale: 'pt_BR',
+  symbol: '',
+  decimalDigits: 2,
+);
 
 /// "1.234,56" a partir de centavos, sem o símbolo — o campo já tem o ícone.
 String formatCentsInput(int cents) => _format.format(cents / 100).trim();

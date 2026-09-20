@@ -21,12 +21,17 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       );
       return EarningsSummaryModel.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.connectionTimeout) {
-        throw Exception('O servidor demorou muito para responder. Verifique sua conexão ou tente novamente.');
+      if (e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw Exception(
+          'O servidor demorou muito para responder. Verifique sua conexão ou tente novamente.',
+        );
       }
-      
+
       if (e.response?.statusCode == 502) {
-        throw Exception('O servidor está temporariamente indisponível. Estamos trabalhando para restaurar o serviço.');
+        throw Exception(
+          'O servidor está temporariamente indisponível. Estamos trabalhando para restaurar o serviço.',
+        );
       }
 
       if (e.response != null && e.response?.data != null) {

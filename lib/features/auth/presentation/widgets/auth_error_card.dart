@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -31,7 +32,7 @@ class AuthErrorCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
+          Icon(LucideIcons.circle_alert, color: colors.error, size: 20),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(

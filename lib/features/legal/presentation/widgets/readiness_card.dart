@@ -57,7 +57,9 @@ class ReadinessCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: AppTypography.title.copyWith(color: colors.textPrimary),
+                  style: AppTypography.title.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
             ],

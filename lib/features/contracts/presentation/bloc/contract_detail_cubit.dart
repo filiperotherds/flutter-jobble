@@ -131,7 +131,8 @@ class ContractDetailCubit extends Cubit<ContractDetailState> {
     }
   }
 
-  void clearMessages() => emit(state.copyWith(clearError: true, clearMessage: true));
+  void clearMessages() =>
+      emit(state.copyWith(clearError: true, clearMessage: true));
 
   Future<bool> _act(
     Future<ContractModel> Function() action,

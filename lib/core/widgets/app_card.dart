@@ -58,7 +58,11 @@ class AppCard extends StatelessWidget {
         bordered ? colors.border : colors.borderLight,
       ),
       AppCardTone.sunken => (colors.surfaceLight, null, colors.borderLight),
-      AppCardTone.brand => (null, AppColorsTheme.brandGradient, Colors.transparent),
+      AppCardTone.brand => (
+        null,
+        AppColorsTheme.brandGradient,
+        Colors.transparent,
+      ),
       AppCardTone.brandSoft => (colors.accentSoft, null, colors.primary),
       AppCardTone.inverse => (colors.inverse, null, colors.inverse),
     };

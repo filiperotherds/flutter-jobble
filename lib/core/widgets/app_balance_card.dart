@@ -53,7 +53,9 @@ class AppBalanceCard extends StatelessWidget {
         borderRadius: AppRadius.xlAll,
         child: Stack(
           children: [
-            const Positioned.fill(child: CustomPaint(painter: _CurvesPainter())),
+            const Positioned.fill(
+              child: CustomPaint(painter: _CurvesPainter()),
+            ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
@@ -131,7 +133,14 @@ class _CurvesPainter extends CustomPainter {
 
     Path curve(List<double> p) => Path()
       ..moveTo(p[0] * sx, p[1] * sy)
-      ..cubicTo(p[2] * sx, p[3] * sy, p[4] * sx, p[5] * sy, p[6] * sx, p[7] * sy)
+      ..cubicTo(
+        p[2] * sx,
+        p[3] * sy,
+        p[4] * sx,
+        p[5] * sy,
+        p[6] * sx,
+        p[7] * sy,
+      )
       ..cubicTo(
         p[8] * sx,
         p[9] * sy,
@@ -149,15 +158,60 @@ class _CurvesPainter extends CustomPainter {
 
     canvas
       ..drawPath(
-        curve([-40, 180, 90, 110, 150, 220, 300, 120, 450, 20, 430, 30, 470, 60]),
+        curve([
+          -40,
+          180,
+          90,
+          110,
+          150,
+          220,
+          300,
+          120,
+          450,
+          20,
+          430,
+          30,
+          470,
+          60,
+        ]),
         stroke(const Color(0x46FFFFFF), 14),
       )
       ..drawPath(
-        curve([-40, 215, 110, 150, 170, 250, 320, 155, 470, 60, 450, 70, 490, 100]),
+        curve([
+          -40,
+          215,
+          110,
+          150,
+          170,
+          250,
+          320,
+          155,
+          470,
+          60,
+          450,
+          70,
+          490,
+          100,
+        ]),
         stroke(const Color(0x2AFFFFFF), 14),
       )
       ..drawPath(
-        curve([-30, 150, 100, 80, 160, 190, 310, 90, 460, -10, 440, 5, 480, 35]),
+        curve([
+          -30,
+          150,
+          100,
+          80,
+          160,
+          190,
+          310,
+          90,
+          460,
+          -10,
+          440,
+          5,
+          480,
+          35,
+        ]),
         stroke(const Color(0x2D5FB733), 10),
       );
   }

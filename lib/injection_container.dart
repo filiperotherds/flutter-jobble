@@ -15,6 +15,7 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'package:flutter_tcc/core/database/database_helper.dart';
 
+import 'package:flutter_tcc/core/services/onboarding_reminders.dart';
 import 'package:flutter_tcc/core/services/token_service.dart';
 
 import 'package:flutter_tcc/features/settings/presentation/bloc/config_bloc.dart';
@@ -47,6 +48,7 @@ Future<void> init() async {
       getMeUseCase: sl(),
       updateOrganizationProfileUseCase: sl(),
       tokenService: sl(),
+      reminders: sl(),
     ),
   );
 
@@ -55,16 +57,17 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignupUseCase(repository: sl()));
   sl.registerLazySingleton(() => VerifyEmailUseCase(repository: sl()));
   sl.registerLazySingleton(() => CompleteOnboardingUseCase(repository: sl()));
-  sl.registerLazySingleton(() => ResendVerificationCodeUseCase(repository: sl()));
+  sl.registerLazySingleton(
+    () => ResendVerificationCodeUseCase(repository: sl()),
+  );
   sl.registerLazySingleton(() => GetMeUseCase(repository: sl()));
-  sl.registerLazySingleton(() => UpdateOrganizationProfileUseCase(repository: sl()));
+  sl.registerLazySingleton(
+    () => UpdateOrganizationProfileUseCase(repository: sl()),
+  );
 
   // Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      remoteDataSource: sl(),
-      localDataSource: sl(),
-    ),
+    () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
   );
 
   // Data sources
@@ -92,6 +95,7 @@ Future<void> init() async {
   // Core
   sl.registerLazySingleton(() => DatabaseHelper());
   sl.registerLazySingleton(() => DioClient(tokenService: sl()));
+  sl.registerLazySingleton(() => OnboardingReminders(dioClient: sl()));
   sl.registerLazySingleton(() => TokenService());
   sl.registerLazySingleton(() => ThemeCubit());
   sl.registerLazySingleton(() => ConfigBloc());

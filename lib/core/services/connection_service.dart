@@ -3,7 +3,8 @@ import 'package:flutter_tcc/core/services/token_service.dart';
 
 class ConnectionMonitor {
   final TokenService tokenService;
-  final StreamController<bool> _connectionController = StreamController<bool>.broadcast();
+  final StreamController<bool> _connectionController =
+      StreamController<bool>.broadcast();
 
   ConnectionMonitor({required this.tokenService});
 

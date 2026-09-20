@@ -206,10 +206,10 @@ class _JobsPageState extends State<JobsPage> {
                   Text(
                     isToday
                         ? 'HOJE'
-                        : DateFormat('EEE', 'pt_BR')
-                              .format(day)
-                              .replaceAll('.', '')
-                              .toUpperCase(),
+                        : DateFormat(
+                            'EEE',
+                            'pt_BR',
+                          ).format(day).replaceAll('.', '').toUpperCase(),
                     style: AppTypography.overline.copyWith(
                       color: selected ? ink : colors.textSecondary,
                       fontSize: 10,
@@ -289,7 +289,8 @@ class _JobCard extends StatelessWidget {
                     // Antes da escolha o nome não existe para o profissional
                     // — o backend nem o envia.
                     Text(
-                      job.clientName ?? 'Nome liberado quando o cliente escolher você',
+                      job.clientName ??
+                          'Nome liberado quando o cliente escolher você',
                       style: AppTypography.bodySmall.copyWith(
                         color: job.clientName != null
                             ? colors.textBody
@@ -313,14 +314,18 @@ class _JobCard extends StatelessWidget {
             trailing: Text(
               value != null ? money.format(value) : 'A combinar',
               style: AppTypography.numeric.copyWith(
-                color: value != null ? colors.textPrimary : colors.textSecondary,
+                color: value != null
+                    ? colors.textPrimary
+                    : colors.textSecondary,
                 fontSize: 15,
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           AppMetaRow(
-            icon: job.addressLine != null ? LucideIcons.map_pin : LucideIcons.lock,
+            icon: job.addressLine != null
+                ? LucideIcons.map_pin
+                : LucideIcons.lock,
             text: place,
           ),
         ],

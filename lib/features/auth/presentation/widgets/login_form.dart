@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:flutter_tcc/core/services/token_service.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
@@ -10,10 +9,8 @@ import 'package:flutter_tcc/core/widgets/app_text_field.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
-import 'package:flutter_tcc/features/auth/presentation/pages/complete_profile_page.dart';
 import 'package:flutter_tcc/features/auth/presentation/pages/signup_page.dart';
 import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
-import 'package:flutter_tcc/injection_container.dart' as di;
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -50,16 +47,12 @@ class _LoginFormState extends State<LoginForm> {
       listener: (context, state) {
         if (state is! AuthSuccess) return;
 
-        final tokenService = di.sl<TokenService>();
-        final completed = tokenService.isOnboardingCompleted(state.accessToken);
         if (!mounted) return;
 
+        // Entrar não depende do cadastro completo: quem ainda não montou o
+        // perfil profissional cai no app com o onboarding guiado por cima.
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => completed
-                ? const AccountGatePage()
-                : const CompleteProfilePage(),
-          ),
+          MaterialPageRoute(builder: (_) => const AccountGatePage()),
           (route) => false,
         );
       },

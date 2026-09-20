@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -8,11 +9,7 @@ class TagInput extends StatefulWidget {
   final List<String> tags;
   final ValueChanged<List<String>> onTagsChanged;
 
-  const TagInput({
-    super.key,
-    required this.tags,
-    required this.onTagsChanged,
-  });
+  const TagInput({super.key, required this.tags, required this.onTagsChanged});
 
   @override
   State<TagInput> createState() => _TagInputState();
@@ -132,7 +129,7 @@ class _TagInputState extends State<TagInput> {
                       GestureDetector(
                         onTap: () => _removeTag(tag),
                         child: Icon(
-                          Icons.close_rounded,
+                          LucideIcons.x,
                           size: 15,
                           color: colors.onPrimary,
                         ),
@@ -161,9 +158,7 @@ class _TagInputState extends State<TagInput> {
                     ),
                     isDense: true,
                   ),
-                  style: AppTypography.body.copyWith(
-                    color: colors.textPrimary,
-                  ),
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
                   onSubmitted: _onTextFieldSubmitted,
                   onChanged: _onTextFieldChanged,
                 ),

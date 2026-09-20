@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -75,7 +76,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
+                leading: const Icon(LucideIcons.camera),
                 title: const Text('Câmera'),
                 onTap: () {
                   Navigator.pop(context);
@@ -83,7 +84,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
+                leading: const Icon(LucideIcons.images),
                 title: const Text('Galeria'),
                 onTap: () {
                   Navigator.pop(context);
@@ -105,7 +106,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         leading: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: AppCircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: LucideIcons.arrow_left,
             tooltip: 'Voltar',
             onPressed: () => Navigator.pop(context),
           ),
@@ -177,7 +178,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                               ),
                               child: Icon(
-                                Icons.photo_camera_rounded,
+                                LucideIcons.camera,
                                 size: 16,
                                 color: context.colors.onPrimary,
                               ),

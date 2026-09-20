@@ -42,9 +42,7 @@ class UserModel extends User {
       'name': name,
       'email': email,
       'avatarUrl': avatarUrl,
-      'organization': organizationId != null 
-          ? {'id': organizationId}
-          : null,
+      'organization': organizationId != null ? {'id': organizationId} : null,
     };
   }
 }

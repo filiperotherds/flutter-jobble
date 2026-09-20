@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_tcc/features/auth/domain/usecases/resend_verification_co
 import 'package:flutter_tcc/features/auth/domain/usecases/get_me_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/update_organization_profile_usecase.dart';
 
+import 'package:flutter_tcc/core/services/onboarding_reminders.dart';
 import 'package:flutter_tcc/core/services/token_service.dart';
 
 import 'package:flutter_tcc/features/auth/data/models/user_model.dart';
@@ -24,6 +26,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final UpdateOrganizationProfileUseCase updateOrganizationProfileUseCase;
   final TokenService tokenService;
 
+  /// Lembretes de cadastro. Opcional: os testes não sobem o plugin de
+  /// notificação.
+  final OnboardingReminders? reminders;
+
   AuthBloc({
     required this.loginUseCase,
     required this.signupUseCase,
@@ -33,6 +39,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.getMeUseCase,
     required this.updateOrganizationProfileUseCase,
     required this.tokenService,
+    this.reminders,
   }) : super(AuthInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<SignupSubmitted>(_onSignupSubmitted);
@@ -48,12 +55,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<OrganizationAvatarUpdated>(_onOrganizationAvatarUpdated);
   }
 
+  /// Registra o aparelho e reagenda o lembrete de cadastro. Falhar aqui não
+  /// pode derrubar a sessão.
+  Future<void> _syncReminders() async {
+    try {
+      await reminders?.sync();
+    } catch (_) {
+      // Lembrete é acessório.
+    }
+  }
+
   Future<void> _onLogoutRequested(
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoggingOut());
     try {
+      await reminders?.unregister();
+      await reminders?.cancel();
       await tokenService.deleteToken();
       emit(AuthLoggedOut());
     } catch (_) {
@@ -91,6 +110,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       final user = await getMeUseCase.execute();
       emit(AuthSuccess(accessToken: result.accessToken, user: user));
+      unawaited(_syncReminders());
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
       emit(AuthFailure(message: message));
@@ -103,14 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      await signupUseCase.execute(
-        event.name,
-        event.email,
-        event.password,
-        cpf: event.cpf,
-        phone: event.phone,
-        birthDate: event.birthDate,
-      );
+      await signupUseCase.execute(event.email, event.password);
       emit(AuthSignupStep1Success());
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
@@ -150,6 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = await getMeUseCase.execute();
         emit(AuthSuccess(accessToken: token, user: user));
       }
+      unawaited(_syncReminders());
       emit(AuthOnboardingSuccess());
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
@@ -193,6 +207,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final user = await getMeUseCase.execute();
         emit(AuthSuccess(accessToken: token, user: user));
+        unawaited(_syncReminders());
       } catch (e) {
         await tokenService.deleteToken();
         emit(AuthInitial());

@@ -89,7 +89,8 @@ String formatCep(String? value) {
 int ageAt(DateTime birthDate, {DateTime? now}) {
   final today = now ?? DateTime.now();
   var age = today.year - birthDate.year;
-  final beforeBirthday = today.month < birthDate.month ||
+  final beforeBirthday =
+      today.month < birthDate.month ||
       (today.month == birthDate.month && today.day < birthDate.day);
   if (beforeBirthday) age--;
   return age;
@@ -117,8 +118,11 @@ String formatBrDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
 
 /// R$ 1.500,00 a partir de centavos.
 String formatCents(int cents) {
-  return NumberFormat.currency(locale: 'pt_BR', symbol: r'R$', decimalDigits: 2)
-      .format(cents / 100);
+  return NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: r'R$',
+    decimalDigits: 2,
+  ).format(cents / 100);
 }
 
 /// Máscaras de campo. Cada chamada cria um formatador novo: eles guardam
@@ -148,7 +152,8 @@ abstract final class BrValidators {
   static String? phone(String? value) =>
       isValidPhone(value) ? null : 'Telefone com DDD';
 
-  static String? cep(String? value) => isValidCep(value) ? null : 'CEP inválido';
+  static String? cep(String? value) =>
+      isValidCep(value) ? null : 'CEP inválido';
 
   static String? adultBirthDate(String? value) {
     final date = parseBrDate(value);

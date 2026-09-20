@@ -225,7 +225,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: colors.textHint),
+                  Icon(LucideIcons.chevron_right, color: colors.textHint),
                 ],
               ),
             ),

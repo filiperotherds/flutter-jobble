@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -23,7 +24,7 @@ class LoginPage extends StatelessWidget {
         leading: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: AppCircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: LucideIcons.arrow_left,
             tooltip: 'Voltar',
             onPressed: () => Navigator.of(context).pop(),
           ),

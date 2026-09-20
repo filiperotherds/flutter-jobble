@@ -51,7 +51,9 @@ class AccountVerification extends Equatable {
       clientReady: json['clientReady'] as bool? ?? false,
       providerReady: json['providerReady'] as bool?,
       profileComplete: json['profileComplete'] as bool? ?? false,
-      identityStatus: IdentityStatus.fromJson(json['identityStatus'] as String?),
+      identityStatus: IdentityStatus.fromJson(
+        json['identityStatus'] as String?,
+      ),
       identityRejectionReason: json['identityRejectionReason'] as String?,
       backgroundCheckStatus: background == null
           ? null

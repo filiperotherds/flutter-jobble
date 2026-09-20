@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/widgets/app_empty_state.dart';
 
@@ -8,7 +9,7 @@ class WalletPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const empty = AppEmptyState(
-      icon: Icons.account_balance_wallet_outlined,
+      icon: LucideIcons.wallet,
       title: 'Carteira',
       description:
           'Seus ganhos e repasses aparecerão aqui quando esta área estiver pronta.',

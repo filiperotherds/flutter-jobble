@@ -80,7 +80,10 @@ void main() {
 
   setUp(() {
     repository = _FakeRepository(ContractModel.fromJson(contractJson()));
-    cubit = ContractDetailCubit(repository: repository, contractId: 'contract-1');
+    cubit = ContractDetailCubit(
+      repository: repository,
+      contractId: 'contract-1',
+    );
   });
 
   tearDown(() => cubit.close());

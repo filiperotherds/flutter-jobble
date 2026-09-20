@@ -31,11 +31,17 @@ class AppConfig {
   static String uploadUrl(String fileName) => '$uploadsBaseUrl/$fileName';
 
   static const Duration connectTimeout = Duration(
-    seconds: int.fromEnvironment('API_CONNECT_TIMEOUT_SECONDS', defaultValue: 10),
+    seconds: int.fromEnvironment(
+      'API_CONNECT_TIMEOUT_SECONDS',
+      defaultValue: 10,
+    ),
   );
 
   static const Duration receiveTimeout = Duration(
-    seconds: int.fromEnvironment('API_RECEIVE_TIMEOUT_SECONDS', defaultValue: 15),
+    seconds: int.fromEnvironment(
+      'API_RECEIVE_TIMEOUT_SECONDS',
+      defaultValue: 15,
+    ),
   );
 
   /// Liga o `LogInterceptor` do Dio. Desligado em release por padrão.

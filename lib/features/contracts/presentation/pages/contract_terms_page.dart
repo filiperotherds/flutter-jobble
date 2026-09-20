@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -225,7 +226,7 @@ class _ContractTermsPageState extends State<ContractTermsPage> {
               hint: '0,00',
               keyboardType: TextInputType.number,
               inputFormatters: [CentsInputFormatter()],
-              prefixIcon: Icons.attach_money_rounded,
+              prefixIcon: LucideIcons.banknote,
               validator: (v) =>
                   parseCents(v ?? '') <= 0 ? 'Informe o valor' : null,
             ),
@@ -266,16 +267,17 @@ class _ContractTermsPageState extends State<ContractTermsPage> {
               controller: _startLabel,
               label: 'Início',
               readOnly: true,
-              prefixIcon: Icons.calendar_today_rounded,
+              prefixIcon: LucideIcons.calendar,
               onTap: () => _pickDate(start: true),
-              validator: (_) => _start == null ? 'Escolha a data de início' : null,
+              validator: (_) =>
+                  _start == null ? 'Escolha a data de início' : null,
             ),
             const SizedBox(height: AppSpacing.gap),
             AppTextField(
               controller: _endLabel,
               label: 'Previsão de término',
               readOnly: true,
-              prefixIcon: Icons.event_available_rounded,
+              prefixIcon: LucideIcons.calendar_check,
               onTap: () => _pickDate(start: false),
               validator: (_) =>
                   _end == null ? 'Escolha a previsão de término' : null,
@@ -284,7 +286,8 @@ class _ContractTermsPageState extends State<ContractTermsPage> {
             AppTextField(
               controller: _warranty,
               label: 'Prazo de garantia (dias)',
-              helper: 'Mínimo de $_minWarrantyDays dias — o prazo legal para '
+              helper:
+                  'Mínimo de $_minWarrantyDays dias — o prazo legal para '
                   'serviços duráveis.',
               keyboardType: TextInputType.number,
               inputFormatters: [digitsOnly],

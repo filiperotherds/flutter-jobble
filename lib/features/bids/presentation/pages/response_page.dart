@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -227,7 +228,7 @@ class _ResponsePageState extends State<ResponsePage> {
         leading: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: AppCircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: LucideIcons.arrow_left,
             tooltip: 'Voltar',
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -280,7 +281,7 @@ class _ResponsePageState extends State<ResponsePage> {
                   hint: '0,00',
                   keyboardType: TextInputType.number,
                   inputFormatters: [_MoneyInputFormatter()],
-                  prefixIcon: Icons.attach_money_rounded,
+                  prefixIcon: LucideIcons.banknote,
                   validator: (v) {
                     if (!_hasValue) return null;
                     if (v == null || v.trim().isEmpty) return 'Informe o valor';
@@ -339,7 +340,7 @@ class _ResponsePageState extends State<ResponsePage> {
                         child: Row(
                           children: [
                             Icon(
-                              Icons.calendar_today_rounded,
+                              LucideIcons.calendar,
                               size: 18,
                               color: colors.textSecondary,
                             ),

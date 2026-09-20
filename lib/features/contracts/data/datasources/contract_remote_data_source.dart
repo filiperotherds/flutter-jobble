@@ -32,9 +32,10 @@ class ContractRemoteDataSource implements ContractRepository {
       _contract(() => dioClient.dio.get('/contracts/$id'));
 
   @override
-  Future<ContractModel> updateTerms(String id, ContractTerms terms) => _contract(
-    () => dioClient.dio.put('/contracts/$id/terms', data: terms.toJson()),
-  );
+  Future<ContractModel> updateTerms(String id, ContractTerms terms) =>
+      _contract(
+        () => dioClient.dio.put('/contracts/$id/terms', data: terms.toJson()),
+      );
 
   @override
   Future<ContractModel> submit(String id) =>
@@ -54,9 +55,13 @@ class ContractRemoteDataSource implements ContractRepository {
       _contract(() => dioClient.dio.post('/contracts/$id/complete'));
 
   @override
-  Future<ContractModel> cancel(String id, {required String reason}) => _contract(
-    () => dioClient.dio.post('/contracts/$id/cancel', data: {'reason': reason}),
-  );
+  Future<ContractModel> cancel(String id, {required String reason}) =>
+      _contract(
+        () => dioClient.dio.post(
+          '/contracts/$id/cancel',
+          data: {'reason': reason},
+        ),
+      );
 
   @override
   Future<ContractModel> terminate(String id, {required String reason}) =>

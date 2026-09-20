@@ -58,8 +58,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage>
   final _bids = sl<BidRemoteDataSource>();
   final _contracts = sl<ContractRepository>();
   final _notifications = sl<NotificationRemoteDataSource>();
-  late final HomeJobsBloc _earnings = sl<HomeJobsBloc>()
-    ..add(GetCompletedJobsTodayRequested());
+  late final HomeJobsBloc _earnings = sl<HomeJobsBloc>();
 
   List<OrgMatch> _matches = const [];
   List<ContractSummary> _contractItems = const [];
@@ -99,12 +98,12 @@ class _HomeDashboardPageState extends State<HomeDashboardPage>
   }
 
   Future<void> _load({bool silent = false}) async {
+    _earnings.add(GetCompletedJobsTodayRequested());
     if (!silent) {
       setState(() {
         _loading = true;
         _error = null;
       });
-      _earnings.add(GetCompletedJobsTodayRequested());
     }
 
     try {
@@ -164,7 +163,9 @@ class _HomeDashboardPageState extends State<HomeDashboardPage>
   // -------------------------------------------------------------------------
 
   Future<void> _push(Widget page) async {
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => page));
     if (mounted) _load(silent: true);
   }
 
@@ -194,9 +195,8 @@ class _HomeDashboardPageState extends State<HomeDashboardPage>
     final contractsToAct = _contractItems
         .where((c) => c.needsAttention)
         .toList();
-    final openWork =
-        _matches.where((m) => m.stage.isOpenWork).toList()
-          ..sort((a, b) => a.when.compareTo(b.when));
+    final openWork = _matches.where((m) => m.stage.isOpenWork).toList()
+      ..sort((a, b) => a.when.compareTo(b.when));
 
     return SafeArea(
       bottom: false,
@@ -270,9 +270,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage>
     List<ContractSummary> contracts,
   ) {
     if (_loading && _matches.isEmpty && _contractItems.isEmpty) {
-      return const AppCard(
-        child: Center(child: AppLoader()),
-      );
+      return const AppCard(child: Center(child: AppLoader()));
     }
 
     if (_error != null && _matches.isEmpty && _contractItems.isEmpty) {

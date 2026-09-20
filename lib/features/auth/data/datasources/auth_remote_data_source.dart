@@ -136,6 +136,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       rethrow;
     }
   }
+
   @override
   Future<UserModel> getMe() async {
     try {

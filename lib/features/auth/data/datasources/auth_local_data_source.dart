@@ -18,25 +18,21 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> cacheUser(UserModel user) async {
     final db = await databaseHelper.database;
-    
+
     // Inserir ou substituir (upsert) baseado na PRIMARY KEY (id)
-    await db.insert(
-      'users_cache',
-      {
-        'id': user.id,
-        'name': user.name,
-        'email': user.email,
-        'avatarUrl': user.avatarUrl,
-        'organizationId': user.organizationId,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('users_cache', {
+      'id': user.id,
+      'name': user.name,
+      'email': user.email,
+      'avatarUrl': user.avatarUrl,
+      'organizationId': user.organizationId,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
   Future<UserModel?> getCachedUser() async {
     final db = await databaseHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query('users_cache');
 
     if (maps.isNotEmpty) {

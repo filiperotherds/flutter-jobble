@@ -168,9 +168,9 @@ class _LegalProfilePageState extends State<LegalProfilePage> {
     try {
       await _dataSource.updateUserProfile(body);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dados salvos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Dados salvos')));
       Navigator.of(context).pop(true);
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -265,7 +265,8 @@ class _LegalProfilePageState extends State<LegalProfilePage> {
             controller: _nationality,
             label: 'Nacionalidade',
             textInputAction: TextInputAction.next,
-            validator: (v) => BrValidators.required(v, 'Informe a nacionalidade'),
+            validator: (v) =>
+                BrValidators.required(v, 'Informe a nacionalidade'),
           ),
           const SizedBox(height: AppSpacing.gap),
           DropdownButtonFormField<MaritalStatus>(

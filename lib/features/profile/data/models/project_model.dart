@@ -22,7 +22,8 @@ class ProjectModel {
       id: json['id'] as String,
       title: json['title'] as String?,
       description: json['description'] as String?,
-      photoUrls: (json['photoUrls'] as List<dynamic>?)
+      photoUrls:
+          (json['photoUrls'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

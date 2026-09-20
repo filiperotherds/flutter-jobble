@@ -24,23 +24,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> signup(
-    String? name,
-    String email,
-    String password, {
-    String? cpf,
-    String? phone,
-    String? birthDate,
-  }) async {
+  Future<void> signup(String email, String password) async {
     await remoteDataSource.signup(
-      SignupRequest(
-        name: name,
-        email: email,
-        password: password,
-        cpf: cpf,
-        phone: phone,
-        birthDate: birthDate,
-      ),
+      SignupRequest(email: email, password: password),
     );
   }
 
@@ -70,6 +56,7 @@ class AuthRepositoryImpl implements AuthRepository {
       legalName: legalName,
     );
   }
+
   @override
   Future<User> getMe() async {
     try {

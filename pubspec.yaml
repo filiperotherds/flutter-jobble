@@ -34,6 +34,11 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # Lembrete de cadastro: o servidor decide quem avisar, o app mostra.
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
   google_fonts: ^8.0.2
   flutter_svg: ^2.2.4
   dio: ^5.4.3
@@ -52,7 +57,9 @@ dependencies:
   sqflite: ^2.4.2+1
   path: ^1.9.1
   shared_preferences: ^2.2.3
-  image_picker: ^1.1.2
+  image_picker: ^1.2.3
+  pdf: ^3.13.0
+  printing: ^5.15.0
 
 dev_dependencies:
   flutter_test:
@@ -76,11 +83,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/base-brasil-white.png
-    - assets/images/google.svg
-    - assets/images/intro_illustration.jpg
-    - assets/images/logo-jobble.png
-    - assets/images/logo-jobble-white.png
+    - assets/images/
     - assets/images/portfolio/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -192,7 +192,10 @@ class AppListGroup extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: AppRadius.lgAll,
-            border: Border.all(color: colors.borderLight, width: AppSize.border),
+            border: Border.all(
+              color: colors.borderLight,
+              width: AppSize.border,
+            ),
             boxShadow: AppShadow.card,
           ),
           child: ClipRRect(

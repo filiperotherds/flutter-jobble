@@ -19,7 +19,10 @@ void main() {
       });
       expect(contract.terms.priceCents, 150000);
       expect(contract.terms.paymentMethod, PaymentMethod.pix);
-      expect(contract.terms.materialsResponsibility, MaterialsResponsibility.provider);
+      expect(
+        contract.terms.materialsResponsibility,
+        MaterialsResponsibility.provider,
+      );
       expect(contract.document.clauses.single.paragraphs, hasLength(2));
       expect(contract.isPreview, isTrue);
     });
@@ -103,7 +106,10 @@ void main() {
     test('estados finais', () {
       expect(ContractStatus.completed.isFinal, isTrue);
       expect(ContractStatus.signed.isFinal, isFalse);
-      expect(ContractStatus.fromJson('AWAITING_CONFIRMATION').label, 'Aguardando confirmação');
+      expect(
+        ContractStatus.fromJson('AWAITING_CONFIRMATION').label,
+        'Aguardando confirmação',
+      );
     });
 
     test('identidade recusada pede reenvio', () {

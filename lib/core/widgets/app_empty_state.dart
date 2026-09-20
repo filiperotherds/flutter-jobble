@@ -54,9 +54,7 @@ class AppEmptyState extends StatelessWidget {
               Text(
                 description!,
                 textAlign: TextAlign.center,
-                style: AppTypography.body.copyWith(
-                  color: colors.textSecondary,
-                ),
+                style: AppTypography.body.copyWith(color: colors.textSecondary),
               ),
             ],
             if (actionLabel != null) ...[

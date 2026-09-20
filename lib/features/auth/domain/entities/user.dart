@@ -21,10 +21,20 @@ class OrganizationData extends Equatable {
     this.matchesCount = 0,
   });
 
-  bool get isComplete => tags != null && tags!.isNotEmpty && bio != null && bio!.isNotEmpty;
+  bool get isComplete =>
+      tags != null && tags!.isNotEmpty && bio != null && bio!.isNotEmpty;
 
   @override
-  List<Object?> get props => [id, name, avatarUrl, tags, bio, rating, projectsCount, matchesCount];
+  List<Object?> get props => [
+    id,
+    name,
+    avatarUrl,
+    tags,
+    bio,
+    rating,
+    projectsCount,
+    matchesCount,
+  ];
 }
 
 class User extends Equatable {
@@ -47,5 +57,12 @@ class User extends Equatable {
   bool get isOnboardingComplete => organization?.isComplete ?? false;
 
   @override
-  List<Object?> get props => [id, name, email, avatarUrl, organizationId, organization];
+  List<Object?> get props => [
+    id,
+    name,
+    email,
+    avatarUrl,
+    organizationId,
+    organization,
+  ];
 }

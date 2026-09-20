@@ -296,7 +296,9 @@ class _IdentityVerificationPageState extends State<IdentityVerificationPage> {
           Text(
             'Boa luz, sem reflexo e com o documento inteiro na foto. Na selfie, '
             'seu rosto e o documento precisam aparecer.',
-            style: AppTypography.bodySmall.copyWith(color: colors.textSecondary),
+            style: AppTypography.bodySmall.copyWith(
+              color: colors.textSecondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           _PhotoTile(
@@ -387,11 +389,15 @@ class _PhotoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTypography.title.copyWith(color: colors.textPrimary),
+                  style: AppTypography.title.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  file == null ? 'Toque para tirar a foto' : 'Toque para trocar',
+                  file == null
+                      ? 'Toque para tirar a foto'
+                      : 'Toque para trocar',
                   style: AppTypography.bodySmall.copyWith(
                     color: colors.textSecondary,
                   ),

@@ -339,7 +339,9 @@ class _StatusCard extends StatelessWidget {
               children: [
                 Text(
                   info.status.certificateLabel,
-                  style: AppTypography.title.copyWith(color: colors.textPrimary),
+                  style: AppTypography.title.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(

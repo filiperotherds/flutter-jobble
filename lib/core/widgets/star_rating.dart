@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -33,7 +34,7 @@ class StarRating extends StatelessWidget {
           (index) => Padding(
             padding: const EdgeInsets.only(right: 2),
             child: Icon(
-              Icons.star_rounded,
+              LucideIcons.star,
               size: starSize,
               color: index < filledStars ? colors.ratingStar : colors.border,
             ),

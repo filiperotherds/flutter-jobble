@@ -124,7 +124,8 @@ class _ContractBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<ContractDetailCubit>();
-    final showReadiness = !contract.status.isFinal &&
+    final showReadiness =
+        !contract.status.isFinal &&
         contract.status != ContractStatus.signed &&
         contract.status != ContractStatus.awaitingConfirmation;
 
@@ -223,7 +224,8 @@ class _StatusCard extends StatelessWidget {
         'Contrato em vigor. Quando terminar o serviço, marque como concluído.',
       ContractStatus.awaitingConfirmation =>
         'Você marcou o serviço como concluído. Aguardando o cliente confirmar.',
-      ContractStatus.completed => 'Serviço concluído e confirmado pelo cliente.',
+      ContractStatus.completed =>
+        'Serviço concluído e confirmado pelo cliente.',
       ContractStatus.canceled =>
         'Cancelado${c.canceledBy == null ? '' : ' pelo ${c.canceledBy!.label.toLowerCase()}'}'
             '${c.cancelReason == null ? '.' : ': ${c.cancelReason}'}',
@@ -260,7 +262,9 @@ class _StatusCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             'Cliente: ${contract.clientName}',
-            style: AppTypography.bodySmall.copyWith(color: colors.textSecondary),
+            style: AppTypography.bodySmall.copyWith(
+              color: colors.textSecondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -325,7 +329,9 @@ class _TermsSummary extends StatelessWidget {
       children: [
         AppListRow(
           title: 'Valor',
-          value: terms.priceCents == null ? 'A definir' : formatCents(terms.priceCents!),
+          value: terms.priceCents == null
+              ? 'A definir'
+              : formatCents(terms.priceCents!),
         ),
         AppListRow(
           title: 'Pagamento',
@@ -334,7 +340,9 @@ class _TermsSummary extends StatelessWidget {
         ),
         AppListRow(
           title: 'Início',
-          value: orDash(terms.startDate == null ? null : formatBrDate(terms.startDate!)),
+          value: orDash(
+            terms.startDate == null ? null : formatBrDate(terms.startDate!),
+          ),
         ),
         AppListRow(
           title: 'Término previsto',
@@ -420,7 +428,9 @@ class _DocumentCard extends StatelessWidget {
               children: [
                 Text(
                   'Ler o contrato',
-                  style: AppTypography.title.copyWith(color: colors.textPrimary),
+                  style: AppTypography.title.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -434,7 +444,7 @@ class _DocumentCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded, color: colors.textHint),
+          Icon(LucideIcons.chevron_right, color: colors.textHint),
         ],
       ),
     );
@@ -570,10 +580,8 @@ class _ActionBar extends StatelessWidget {
     final cubit = context.read<ContractDetailCubit>();
     return Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: cubit,
-          child: const ContractTermsPage(),
-        ),
+        builder: (_) =>
+            BlocProvider.value(value: cubit, child: const ContractTermsPage()),
       ),
     );
   }

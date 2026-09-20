@@ -18,26 +18,13 @@ class LoginSubmitted extends AuthEvent {
 }
 
 class SignupSubmitted extends AuthEvent {
-  final String? name;
   final String email;
   final String password;
-  final String? cpf;
-  final String? phone;
 
-  /// ISO 8601.
-  final String? birthDate;
-
-  const SignupSubmitted({
-    this.name,
-    required this.email,
-    required this.password,
-    this.cpf,
-    this.phone,
-    this.birthDate,
-  });
+  const SignupSubmitted({required this.email, required this.password});
 
   @override
-  List<Object?> get props => [name, email, password, cpf, phone, birthDate];
+  List<Object?> get props => [email, password];
 }
 
 class EmailVerificationSubmitted extends AuthEvent {
@@ -83,7 +70,10 @@ class UpdateOrganizationProfileSubmitted extends AuthEvent {
   final String tags;
   final String bio;
 
-  const UpdateOrganizationProfileSubmitted({required this.tags, required this.bio});
+  const UpdateOrganizationProfileSubmitted({
+    required this.tags,
+    required this.bio,
+  });
 
   @override
   List<Object> get props => [tags, bio];

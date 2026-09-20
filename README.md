@@ -103,3 +103,7 @@ lib/
       domain/      entities, repositories, usecases
       presentation/ bloc, pages, widgets
 ```
+
+## Migração do app unificado
+
+A comparação de telas, divisão entre cliente e prestador, adaptações e limites das integrações estão em [docs/MIGRACAO_JOBBLE.md](docs/MIGRACAO_JOBBLE.md).

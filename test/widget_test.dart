@@ -65,7 +65,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Cadastro completo e identidade verificada.'), findsOneWidget);
+    expect(
+      find.text('Cadastro completo e identidade verificada.'),
+      findsOneWidget,
+    );
     expect(find.text('Completar agora'), findsNothing);
   });
 
@@ -79,7 +82,10 @@ void main() {
     );
 
     expect(find.text('CLÁUSULA 1 — DO OBJETO'), findsOneWidget);
-    expect(find.text('1.1. O presente contrato tem por objeto…'), findsOneWidget);
+    expect(
+      find.text('1.1. O presente contrato tem por objeto…'),
+      findsOneWidget,
+    );
     expect(find.text('a) item'), findsOneWidget);
     expect(find.textContaining('Prévia.'), findsOneWidget);
   });
