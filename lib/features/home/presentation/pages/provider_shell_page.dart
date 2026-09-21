@@ -388,8 +388,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       _buildShortcutTile('Meu Catálogo e Preços', LucideIcons.list, () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ProviderServicesCatalogPage())); }),
                       const Divider(height: 1),
                       _buildShortcutTile('Desempenho e Avaliações', LucideIcons.star, () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ProviderPerformancePage())); }),
-                      const Divider(height: 1),
-                      _buildShortcutTile('Histórico de Repasses', LucideIcons.dollar_sign, () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ProviderTransfersPage())); }),
+
                       const Divider(height: 1),
                       _buildShortcutTile('Configurações do Perfil', LucideIcons.settings, () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ProviderSettingsPage())); }),
                     ],
