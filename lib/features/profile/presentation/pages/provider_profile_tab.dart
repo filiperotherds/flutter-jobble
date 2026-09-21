@@ -1,8 +1,4 @@
-import 'package:flutter_tcc/features/service_flow/provider_setup_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tcc/features/auth/presentation/widgets/sign_out_row.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/profile_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_registration_page.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -13,6 +9,7 @@ import 'package:flutter_tcc/features/profile/presentation/pages/provider_service
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_performance_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_banking_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_settings_page.dart';
+import 'package:flutter_tcc/features/home/presentation/pages/provider_agenda_page.dart';
 
 class ProviderProfileTab extends StatelessWidget {
   const ProviderProfileTab({super.key});
@@ -23,20 +20,10 @@ class ProviderProfileTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Perfil Profissional',
-          style: AppTypography.h3.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ),
       body: ListView(
+        padding: EdgeInsets.zero,
         children: [
-          // Capa (Cover Image)
+                    // Capa (Cover Image)
           Stack(
             children: [
               SizedBox(
@@ -48,25 +35,21 @@ class ProviderProfileTab extends StatelessWidget {
                 ),
               ),
               Positioned(
-                top: 8,
-                right: 8,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    icon: Icon(LucideIcons.pencil, color: colors.primary),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ProviderEditProfilePage(),
-                        ),
-                      );
-                    },
-                  ),
+                top: 16 + MediaQuery.of(context).padding.top, // Add top padding to account for status bar since there's no appbar
+                right: 16,
+                child: IconButton(
+                  style: IconButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.4)),
+                  icon: const Icon(LucideIcons.pencil, color: Colors.white),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ProviderEditProfilePage()),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-
+          
           // Header com foto e nome
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -83,31 +66,21 @@ class ProviderProfileTab extends StatelessWidget {
                     children: [
                       Text(
                         'Roberto Pinturas e Reformas',
-                        style: AppTypography.h3.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'São Paulo, SP',
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                        style: AppTypography.caption.copyWith(color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
-                            LucideIcons.star,
-                            size: 16,
-                            color: Colors.orange,
-                          ),
+                          const Icon(Icons.star_rounded, size: 16, color: Colors.orange),
                           const SizedBox(width: 4),
                           Text(
                             '5.0 (42 avaliações)',
-                            style: AppTypography.caption.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -117,7 +90,7 @@ class ProviderProfileTab extends StatelessWidget {
               ],
             ),
           ),
-
+          
           const SizedBox(height: AppSpacing.md),
 
           // Cards de métricas rápidas
@@ -136,89 +109,50 @@ class ProviderProfileTab extends StatelessWidget {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Ganhos (Mês)',
-                    value: 'R\$ 3.2K',
-                    icon: LucideIcons.wallet,
+                    title: 'Avaliação',
+                    value: '4.9',
+                    icon: LucideIcons.star,
                     colors: colors,
                   ),
                 ),
               ],
             ),
           ),
-
+          
           const SizedBox(height: AppSpacing.md),
 
           // Menu de Opções
           Column(
             children: [
               _buildMenuItem(
-                icon: LucideIcons.shield_check,
-                title: 'Minha conta e verificação',
-                subtitle: 'Dados cadastrados, documentos e serviços',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Minha conta')),
-                      body: const SafeArea(child: ProfilePage()),
-                    ),
-                  ),
-                ),
-              ),
-              _buildMenuItem(
-                icon: LucideIcons.briefcase,
-                title: 'Cadastro profissional',
-                subtitle: 'Negócio, região de atendimento e contato',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ProviderRegistrationPage(),
-                  ),
-                ),
-              ),
-              _buildMenuItem(
                 icon: LucideIcons.image,
                 title: 'Meu Portfólio',
                 subtitle: 'Adicione fotos dos seus trabalhos',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProviderPortfolioPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const ProviderPortfolioPage()),
                   );
                 },
               ),
               const Divider(height: 1, indent: 56),
-              _buildMenuItem(
-                icon: LucideIcons.clock,
-                title: 'Horários de atendimento',
-                subtitle: 'Dias, horários e atendimento 24 horas',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ProviderAttendancePage(),
-                  ),
-                ),
-              ),
               _buildMenuItem(
                 icon: LucideIcons.list,
                 title: 'Catálogo de Serviços',
                 subtitle: 'Gerencie seus preços e serviços',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProviderServicesCatalogPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const ProviderServicesCatalogPage()),
                   );
                 },
               ),
               const Divider(height: 1, indent: 56),
               _buildMenuItem(
-                icon: LucideIcons.chart_column,
-                title: 'Desempenho',
-                subtitle: 'Veja suas estatísticas detalhadas',
+                icon: Icons.calendar_today_rounded,
+                title: 'Agenda',
+                subtitle: 'Controle seus compromissos',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProviderPerformancePage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const ProviderAgendaPage()),
                   );
                 },
               ),
@@ -229,9 +163,7 @@ class ProviderProfileTab extends StatelessWidget {
                 subtitle: 'Onde você recebe seus pagamentos',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProviderBankingPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const ProviderBankingPage()),
                   );
                 },
               ),
@@ -242,9 +174,7 @@ class ProviderProfileTab extends StatelessWidget {
                 subtitle: 'Notificações, privacidade e conta',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProviderSettingsPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const ProviderSettingsPage()),
                   );
                 },
               ),
@@ -256,21 +186,28 @@ class ProviderProfileTab extends StatelessWidget {
           // Botão de sair
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: const SignOutRow(),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // Desloga o prestador
+              },
+              icon: const Icon(LucideIcons.log_out, color: Colors.red),
+              label: const Text('Sair da conta', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[50],
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
-
+          
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required AppColorsTheme colors,
-  }) {
+  Widget _buildMetricCard({required String title, required String value, required IconData icon, required AppColorsTheme colors}) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -285,30 +222,17 @@ class ProviderProfileTab extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: colors.textSecondary),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                title,
-                style: AppTypography.caption.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
+              Text(title, style: AppTypography.caption.copyWith(color: colors.textSecondary)),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildMenuItem({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -318,20 +242,24 @@ class ProviderProfileTab extends StatelessWidget {
         ),
         child: Icon(icon, color: Colors.black87, size: 20),
       ),
-      title: Text(
-        title,
-        style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: AppTypography.caption.copyWith(color: Colors.grey[600]),
-      ),
-      trailing: const Icon(
-        LucideIcons.chevron_right,
-        size: 20,
-        color: Colors.grey,
-      ),
+      title: Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+      subtitle: Text(subtitle, style: AppTypography.caption.copyWith(color: Colors.grey[600])),
+      trailing: const Icon(LucideIcons.chevron_right, size: 20, color: Colors.grey),
       onTap: onTap,
     );
   }
+  Widget _buildServiceInline(BuildContext context, String title, String price) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w500)),
+          Text(price, style: AppTypography.caption.copyWith(color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
 }
+
+

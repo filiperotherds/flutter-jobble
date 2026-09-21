@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:flutter_tcc/core/theme/app_theme.dart';
-import 'package:flutter_tcc/features/onboard/presentation/pages/intro_page.dart';
+import 'package:flutter_tcc/features/home/presentation/pages/provider_shell_page.dart';
 import 'package:flutter_tcc/injection_container.dart' as di;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeMode,
-            home: const IntroPage(),
+            home: const ProviderShellPage(),
           );
         },
       ),

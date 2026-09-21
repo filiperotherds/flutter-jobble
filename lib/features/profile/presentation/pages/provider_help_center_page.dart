@@ -137,7 +137,7 @@ class _ProviderHelpCenterPageState extends State<ProviderHelpCenterPage> {
                     onChanged: (val) =>
                         setState(() => _searchQuery = val.trim()),
                     decoration: InputDecoration(
-                      hintText: 'Pesquise por pagamentos, taxas, orçamentos...',
+                      hintText: 'Pesquise por taxas, orçamentos, prazos...',
                       hintStyle: TextStyle(
                         color: Colors.grey[400],
                         fontSize: 13,

@@ -13,14 +13,7 @@ class ProviderEditProfilePage extends StatefulWidget {
 }
 
 class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
-  final List<String> _tags = [
-    'Visita Técnica',
-    'Diária Completa',
-    'Pequenos Reparos',
-    'Pintura Residencial',
-    'Manutenção',
-  ];
-  final TextEditingController _tagController = TextEditingController();
+  
 
   final TextEditingController _nameController = TextEditingController(
     text: 'Roberto Pinturas e Reformas',
@@ -28,20 +21,23 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
   final TextEditingController _locationController = TextEditingController(
     text: 'São Paulo, SP',
   );
-  final TextEditingController _aboutController = TextEditingController(
-    text:
-        'Especialista em reformas gerais e acabamento fino. Trabalho com rapidez, limpeza e garantia de serviço bem feito. Atendendo a região há mais de 5 anos.',
-  );
+  Map<String, Map<String, dynamic>> _workingHours = {
+    'Segunda-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+    'Terça-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+    'Quarta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+    'Quinta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+    'Sexta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+    'Sábado': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 12, minute: 0)},
+    'Domingo': {'isOpen': false, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
+  };
   final TextEditingController _cnpjController = TextEditingController(
     text: '12.345.678/0001-90',
   );
 
   @override
   void dispose() {
-    _tagController.dispose();
     _nameController.dispose();
     _locationController.dispose();
-    _aboutController.dispose();
     _cnpjController.dispose();
     super.dispose();
   }
@@ -185,112 +181,13 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
               const SizedBox(height: AppSpacing.lg),
 
               Text(
-                'Sobre você / Biografia',
+                'Horário de funcionamento',
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: _aboutController,
-                maxLines: 4,
-                decoration: _inputDecoration(colors),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Tags
-              Text(
-                'Especialidades / Tags',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Adicione palavras-chave sobre o que você faz para ajudar os clientes a te encontrarem na busca.',
-                style: AppTypography.caption.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _tagController,
-                      decoration: _inputDecoration(
-                        colors,
-                      ).copyWith(hintText: 'Ex: Instalação Elétrica'),
-                      onSubmitted: (val) {
-                        if (val.trim().isNotEmpty) {
-                          setState(() {
-                            _tags.add(val.trim());
-                            _tagController.clear();
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  InkWell(
-                    onTap: () {
-                      if (_tagController.text.trim().isNotEmpty) {
-                        setState(() {
-                          _tags.add(_tagController.text.trim());
-                          _tagController.clear();
-                        });
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      height: 54, // Force exact height to match TextField
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: colors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        LucideIcons.plus,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(
-                      tag,
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    backgroundColor: Colors.grey[200],
-                    deleteIcon: Icon(
-                      LucideIcons.x,
-                      size: 16,
-                      color: colors.textSecondary,
-                    ),
-                    onDeleted: () {
-                      setState(() {
-                        _tags.remove(tag);
-                      });
-                    },
-                    side: const BorderSide(color: Colors.transparent),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  );
-                }).toList(),
-              ),
+              _buildWorkingHoursEditor(colors),
               const SizedBox(height: AppSpacing.xxl),
             ],
           ),
@@ -361,4 +258,191 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
       ),
     );
   }
+
+  Widget _buildWorkingHoursEditor(AppColorsTheme colors) {
+    final days = [
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+      'Domingo'
+    ];
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: List.generate(days.length, (index) {
+          final day = days[index];
+          final config = _workingHours[day]!;
+          final isWeekend = !config['isOpen'];
+          
+          String formatTime(TimeOfDay time) {
+            return ':';
+          }
+          
+          final timeStr = isWeekend 
+              ? 'Fechado' 
+              : ' às ';
+          
+          return Column(
+            children: [
+              InkWell(
+                onTap: () => _showEditDayDialog(day),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        day,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            timeStr,
+                            style: AppTypography.body.copyWith(
+                              color: isWeekend ? colors.error : colors.textSecondary,
+                              fontWeight: isWeekend ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(LucideIcons.chevron_right, size: 16, color: Colors.grey[400]),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (index < days.length - 1)
+                Divider(height: 1, thickness: 1, color: Colors.grey.withOpacity(0.1), indent: 16, endIndent: 16),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  void _showEditDayDialog(String day) {
+    final config = _workingHours[day]!;
+    bool tempIsOpen = config['isOpen'];
+    TimeOfDay tempStart = config['start'];
+    TimeOfDay tempEnd = config['end'];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            String formatTime(TimeOfDay time) {
+              return ':';
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Horários: ',
+                    style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  SwitchListTile(
+                    title: const Text('Aberto neste dia'),
+                    value: tempIsOpen,
+                    activeColor: Colors.green,
+                    onChanged: (val) {
+                      setModalState(() => tempIsOpen = val);
+                    },
+                  ),
+                  if (tempIsOpen) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Abertura'),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: tempStart,
+                            );
+                            if (picked != null) {
+                              setModalState(() => tempStart = picked);
+                            }
+                          },
+                          child: Text(
+                            formatTime(tempStart),
+                            style: AppTypography.h3.copyWith(color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Fechamento'),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: tempEnd,
+                            );
+                            if (picked != null) {
+                              setModalState(() => tempEnd = picked);
+                            }
+                          },
+                          child: Text(
+                            formatTime(tempEnd),
+                            style: AppTypography.h3.copyWith(color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _workingHours[day] = {
+                          'isOpen': tempIsOpen,
+                          'start': tempStart,
+                          'end': tempEnd,
+                        };
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Salvar Alterações', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 }

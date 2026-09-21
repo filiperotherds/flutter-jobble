@@ -123,12 +123,12 @@ class _TabButton extends StatelessWidget {
                     right: 6,
                     top: 0,
                     child: Container(
-                      width: 8,
-                      height: 8,
+                      width: 12,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: colors.error,
                         shape: BoxShape.circle,
-                        border: Border.all(color: colors.surface, width: 1.5),
+                        border: Border.all(color: colors.surface, width: 2.0),
                       ),
                     ),
                   ),
