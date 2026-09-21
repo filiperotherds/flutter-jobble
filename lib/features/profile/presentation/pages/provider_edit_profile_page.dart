@@ -18,9 +18,11 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
   final TextEditingController _nameController = TextEditingController(
     text: 'Roberto Pinturas e Reformas',
   );
-  final TextEditingController _locationController = TextEditingController(
-    text: 'São Paulo, SP',
-  );
+  final TextEditingController _ruaController = TextEditingController();
+  final TextEditingController _numeroController = TextEditingController();
+  final TextEditingController _bairroController = TextEditingController();
+  final TextEditingController _cidadeController = TextEditingController(text: 'São Paulo, SP');
+  final TextEditingController _cepController = TextEditingController();
   Map<String, Map<String, dynamic>> _workingHours = {
     'Segunda-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
     'Terça-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
@@ -37,7 +39,11 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _locationController.dispose();
+    _ruaController.dispose();
+    _numeroController.dispose();
+    _bairroController.dispose();
+    _cidadeController.dispose();
+    _cepController.dispose();
     _cnpjController.dispose();
     super.dispose();
   }
@@ -160,14 +166,66 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
               _buildTextField(_nameController, colors),
               const SizedBox(height: AppSpacing.lg),
 
-              Text(
-                'Localização',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Localização',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _ruaController.text = 'Rua das Flores';
+                        _numeroController.text = '123';
+                        _bairroController.text = 'Centro';
+                        _cidadeController.text = 'São Paulo - SP';
+                        _cepController.text = '01000-000';
+                      });
+                    },
+                    icon: Icon(LucideIcons.map_pin, size: 14, color: colors.primary),
+                    label: Text(
+                      'Usar minha localização', 
+                      style: AppTypography.caption.copyWith(color: colors.primary, fontWeight: FontWeight.bold),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              _buildTextField(_locationController, colors),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: _buildTextField(_ruaController, colors, hint: 'Rua'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    flex: 1,
+                    child: _buildTextField(_numeroController, colors, hint: 'Número'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(_bairroController, colors, hint: 'Bairro'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _buildTextField(_cidadeController, colors, hint: 'Cidade, UF'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _buildTextField(_cepController, colors, hint: 'CEP'),
               const SizedBox(height: AppSpacing.lg),
 
               Text(
@@ -228,16 +286,19 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
 
   Widget _buildTextField(
     TextEditingController controller,
-    AppColorsTheme colors,
-  ) {
+    AppColorsTheme colors, {
+    String? hint,
+  }) {
     return TextField(
       controller: controller,
-      decoration: _inputDecoration(colors),
+      decoration: _inputDecoration(colors, hint: hint),
     );
   }
 
-  InputDecoration _inputDecoration(AppColorsTheme colors) {
+  InputDecoration _inputDecoration(AppColorsTheme colors, {String? hint}) {
     return InputDecoration(
+      hintText: hint,
+      hintStyle: AppTypography.body.copyWith(color: Colors.grey[400]),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

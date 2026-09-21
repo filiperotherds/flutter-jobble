@@ -7,7 +7,6 @@ import 'package:flutter_tcc/features/profile/presentation/pages/provider_portfol
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_edit_profile_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_services_catalog_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_performance_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_banking_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_settings_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_agenda_page.dart';
 
@@ -156,18 +155,6 @@ class ProviderProfileTab extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(height: 1, indent: 56),
-              _buildMenuItem(
-                icon: LucideIcons.credit_card,
-                title: 'Dados Bancários',
-                subtitle: 'Onde você recebe seus pagamentos',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const ProviderBankingPage()),
-                  );
-                },
-              ),
-              const Divider(height: 1, indent: 56),
               _buildMenuItem(
                 icon: LucideIcons.settings,
                 title: 'Configurações',

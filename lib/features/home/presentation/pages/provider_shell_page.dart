@@ -281,89 +281,157 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
               
               SizedBox(height: AppSpacing.lg),
 
-              // Trabalhos em andamento
-              if (activeJobs.isNotEmpty) ...[
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Row(
+              
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    gradient: AppColorsTheme.brandGradient,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2563EB),
-                          shape: BoxShape.circle,
+                      // Ícones de fundo estilo Jobble
+                      Positioned(
+                        right: -10,
+                        bottom: -20,
+                        child: Transform.rotate(
+                          angle: -0.2,
+                          child: Icon(
+                            LucideIcons.award,
+                            size: 110,
+                            color: Colors.white.withValues(alpha: 0.35),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Trabalhos em andamento (${activeJobs.length})',
-                        style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+                      Positioned(
+                        right: 80,
+                        top: -10,
+                        child: Transform.rotate(
+                          angle: 0.3,
+                          child: Icon(
+                            LucideIcons.star,
+                            size: 60,
+                            color: Colors.white.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ),
+                      // Conteúdo
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Preste um serviço nota 5!',
+                                  style: AppTypography.h2.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF14300A),
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Um bom atendimento garante ótimas avaliações e mais clientes para você.',
+                                  style: AppTypography.caption.copyWith(
+                                    color: const Color(0xFF1B4310),
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0D2506),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Ver dicas de ouro',
+                                        style: AppTypography.body.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(LucideIcons.arrow_right, size: 16, color: Colors.white),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: AppSpacing.sm),
-                ...activeJobs.map((card) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: card,
-                )),
-                SizedBox(height: AppSpacing.sm),
-              ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // Trabalhos em andamento
+              if (activeJobs.isNotEmpty)
+                _buildExpandableSection(
+                  title: 'Trabalhos em andamento (${activeJobs.length})',
+                  dotColor: const Color(0xFF2563EB),
+                  initiallyExpanded: true,
+                  children: activeJobs.map((card) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md, left: AppSpacing.md, right: AppSpacing.md),
+                    child: card,
+                  )).toList(),
+                ),
 
               // Seção: Aguardando retorno do cliente
-              if (quoteState.isQuoteSent && !quoteState.isClientSigned) ...[
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF7C3AED),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Aguardando retorno do cliente (1)',
-                        style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+              if (quoteState.isQuoteSent && !quoteState.isClientSigned)
+                _buildExpandableSection(
+                  title: 'Aguardando retorno do cliente (1)',
+                  dotColor: const Color(0xFF7C3AED),
+                  initiallyExpanded: true,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: _buildAwaitingClientCard(quoteState),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                 ),
-                SizedBox(height: AppSpacing.sm),
-                _buildAwaitingClientCard(quoteState),
-                SizedBox(height: AppSpacing.xl),
-              ],
 
               // Pedidos Pendentes (Aguardando orçamento)
-              if (!_isPendingJobDeclined) ...[
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEA580C),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Aguardando orçamento (1)',
-                        style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+              if (!_isPendingJobDeclined)
+                _buildExpandableSection(
+                  title: 'Aguardando orçamento (1)',
+                  dotColor: const Color(0xFFEA580C),
+                  initiallyExpanded: true,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: _buildPendingRequestCard(quoteState),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                 ),
-                SizedBox(height: AppSpacing.sm),
-                _buildPendingRequestCard(quoteState),
-                SizedBox(height: AppSpacing.xl),
-              ],
 
               // Atalhos Rápidos
               Padding(
@@ -1278,11 +1346,37 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
   Widget _buildPlaceholder(String title) {
     return Center(child: Text(title));
   }
+
+  Widget _buildExpandableSection({
+    required String title,
+    required Color dotColor,
+    required List<Widget> children,
+    bool initiallyExpanded = true,
+  }) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        title: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        children: children,
+      ),
+    );
+  }
 }
-
-
-
-
-
-
-
