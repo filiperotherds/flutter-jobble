@@ -3,6 +3,11 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
+import 'package:flutter_tcc/features/profile/data/account_api.dart';
+import 'package:flutter_tcc/features/profile/presentation/pages/profile_cover_page.dart';
+import 'package:flutter_tcc/features/quotes/data/quotes_api.dart';
 
 class ProviderEditProfilePage extends StatefulWidget {
   const ProviderEditProfilePage({super.key});
@@ -13,6 +18,137 @@ class ProviderEditProfilePage extends StatefulWidget {
 }
 
 class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
+  final _account = AccountApi();
+  final _picker = ImagePicker();
+
+  /// A capa que ele escolheu. Nula enquanto carrega, ou quando ele ainda nao
+  /// escolheu nenhuma — ai fica a capa padrao.
+  String? _coverUrl;
+  bool _savingCover = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCover();
+  }
+
+  Future<void> _loadCover() async {
+    try {
+      final cover = await _account.cover();
+      if (mounted) setState(() => _coverUrl = cover);
+    } on ApiException {
+      // Sem servidor, fica a capa padrao.
+    }
+  }
+
+  /// As tres formas de mexer na capa. A do portfolio vem primeiro porque e a
+  /// mais provavel: a foto boa do trabalho dele ja esta publicada ali.
+  void _showCoverOptions() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                LucideIcons.image,
+                color: context.colors.textPrimary,
+              ),
+              title: const Text('Escolher do portfolio'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickFromPortfolio();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                LucideIcons.upload,
+                color: context.colors.textPrimary,
+              ),
+              title: const Text('Enviar uma imagem'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _uploadCover();
+              },
+            ),
+            if (_coverUrl != null)
+              ListTile(
+                leading: Icon(LucideIcons.trash_2, color: context.colors.error),
+                title: const Text('Remover capa'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _removeCover();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromPortfolio() async {
+    final chosen = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => ProfileCoverPage(currentCoverUrl: _coverUrl),
+      ),
+    );
+    if (chosen == null) return;
+
+    await _saveCover(() async {
+      await _account.setCover(chosen);
+      return chosen;
+    });
+  }
+
+  Future<void> _uploadCover() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    await _saveCover(() async {
+      final bytes = await picked.readAsBytes();
+      return _account.uploadCover(bytes: bytes, filename: picked.name);
+    });
+  }
+
+  Future<void> _removeCover() async {
+    await _saveCover(() async {
+      await _account.clearCover();
+      return null;
+    });
+  }
+
+  Future<void> _saveCover(Future<String?> Function() action) async {
+    setState(() => _savingCover = true);
+    try {
+      final url = await action();
+      if (!mounted) return;
+      setState(() {
+        _coverUrl = url;
+        _savingCover = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(url == null ? 'Capa removida.' : 'Capa atualizada.'),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _savingCover = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          backgroundColor: context.colors.error,
+        ),
+      );
+    }
+  }
+
   
 
   final TextEditingController _nameController = TextEditingController(
@@ -83,37 +219,59 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              Stack(
-                children: [
-                  Container(
-                    height: 140,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/intro_bg.jpeg'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
+              GestureDetector(
+                onTap: _savingCover ? null : _showCoverOptions,
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 140,
+                      width: double.infinity,
                       decoration: BoxDecoration(
-                        color: colors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        LucideIcons.camera,
-                        color: Colors.white,
-                        size: 16,
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          // A capa e escolha dele: um trabalho do portfolio,
+                          // uma arte com a logo. Sem escolha, a capa padrao.
+                          image: _coverUrl == null
+                              ? const AssetImage('assets/images/intro_bg.jpeg')
+                              : NetworkImage(QuotesApi.photoUrl(_coverUrl!))
+                                    as ImageProvider,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    if (_savingCover)
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colors.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          LucideIcons.camera,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
 

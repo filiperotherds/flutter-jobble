@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_tcc/features/requests/domain/job_progress.dart';
 import 'package:flutter_tcc/core/theme/app_theme.dart';
 import 'package:flutter_tcc/core/state/jobble_quote_state.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_agenda_page.dart';
@@ -40,24 +41,52 @@ void main() {
     expect(find.text('Cliente: Ana'), findsOneWidget);
   });
 
-  testWidgets('tracker adds an update and changes the progress', (
+  testWidgets('tracker publishes an update without touching the progress', (
     tester,
   ) async {
     await mount(tester, const ProviderJobTrackerPage());
+    final before = JobProgress.value;
+
     await tester.tap(find.text('Nova Atualização'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextFormField).first,
       'Acabamento concluído',
     );
-    final slider = tester.widget<Slider>(find.byType(Slider));
-    slider.onChanged!(0.90);
-    await tester.pump();
+    // A porcentagem não é mais escolhida à mão: o profissional conta o que
+    // fez, e a barra sai das etapas concluídas.
+    expect(find.byType(Slider), findsNothing);
     await tester.ensureVisible(find.text('Salvar e Notificar Cliente'));
     await tester.tap(find.text('Salvar e Notificar Cliente'));
     await tester.pumpAndSettle();
+
     expect(find.text('Acabamento concluído'), findsOneWidget);
-    expect(find.text('90%'), findsOneWidget);
+    expect(JobProgress.value, before);
+  });
+
+  testWidgets('finishing a step moves the progress bar', (tester) async {
+    await mount(tester, const ProviderJobTrackerPage());
+    final before = JobProgress.value;
+    final index = JobProgress.tasks.indexWhere((task) => !task.done);
+    final pending = JobProgress.tasks[index];
+
+    // A régua no topo é só resumo; quem recebe o toque é a lista de etapas.
+    final step = find.byKey(ValueKey('job-step-row-$index'));
+    await tester.ensureVisible(step);
+    await tester.tap(step);
+    await tester.pumpAndSettle();
+
+    expect(pending.done, isTrue);
+    expect(JobProgress.value, greaterThan(before));
+    // O contador ao lado de "Etapas do serviço": o resumo do cabeçalho sai da
+    // árvore quando a lista rola até a etapa.
+    expect(
+      find.text('${JobProgress.doneCount}/${JobProgress.tasks.length}'),
+      findsOneWidget,
+    );
+
+    // Deixa como estava: a lista é compartilhada entre os testes.
+    pending.done = false;
   });
 
   testWidgets('new quote recalculates total and requires a new signature', (

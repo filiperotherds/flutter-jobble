@@ -7,6 +7,7 @@ import 'package:flutter_tcc/features/auth/domain/repositories/auth_repository.da
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/sign_out_row.dart';
 import 'package:flutter_tcc/features/onboard/presentation/pages/intro_page.dart';
+import 'package:flutter_tcc/features/auth/domain/usecases/google_login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/verify_email_usecase.dart';
@@ -40,6 +41,7 @@ void main() {
       final tokens = _Tokens()..fail = failsFirst;
       final bloc = AuthBloc(
         loginUseCase: LoginUseCase(repository: repository),
+        googleLoginUseCase: GoogleLoginUseCase(repository: repository),
         signupUseCase: SignupUseCase(repository: repository),
         verifyEmailUseCase: VerifyEmailUseCase(repository: repository),
         completeOnboardingUseCase: CompleteOnboardingUseCase(

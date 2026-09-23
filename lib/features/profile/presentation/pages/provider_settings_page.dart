@@ -4,6 +4,8 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
+import 'package:flutter_tcc/features/profile/data/account_api.dart';
 import 'package:flutter_tcc/core/widgets/app_text_field.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_help_center_page.dart';
@@ -17,12 +19,58 @@ class ProviderSettingsPage extends StatefulWidget {
 }
 
 class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
+  final _account = AccountApi();
+
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _showPhone = true;
   bool _showLocation = true;
   bool _twoFactorEnabled = true;
   bool _biometricEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final settings = await _account.settings();
+      if (!mounted) return;
+      setState(() {
+        _pushNotifications = settings.pushNotifications;
+        _emailNotifications = settings.emailNotifications;
+        _showPhone = settings.showPhone;
+        _showLocation = settings.showLocation;
+        _twoFactorEnabled = settings.twoFactorEnabled;
+        _biometricEnabled = settings.biometricEnabled;
+      });
+    } catch (_) {
+      // Sem servidor, os interruptores ficam no padrão em vez de sumirem.
+    }
+  }
+
+  /// Guarda a escolha assim que ela é feita.
+  ///
+  /// A tela não tem botão de salvar, e virar um interruptor é uma decisão
+  /// completa: guardar depois — ou nunca — seria pedir à pessoa que
+  /// confirmasse duas vezes o mesmo gesto. Se o servidor recusar, o
+  /// interruptor volta ao que era e a tela diz por quê.
+  Future<void> _save(String key, bool value, void Function(bool) apply) async {
+    final previous = !value;
+    setState(() => apply(value));
+
+    try {
+      await _account.updateSettings({key: value});
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => apply(previous));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message), backgroundColor: Colors.red[700]),
+      );
+    }
+  }
 
   void _showChangePasswordModal() {
     final currentPasswordController = TextEditingController();
@@ -133,15 +181,33 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                   const SizedBox(height: AppSpacing.lg),
                   AppAccentButton(
                     label: 'Salvar Nova Senha',
-                    onPressed: () {
+                    onPressed: () async {
                       if (!formKey.currentState!.validate()) return;
-                      Navigator.pop(modalCtx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Senha alterada com sucesso!'),
-                          backgroundColor: Color(0xFF10B981),
-                        ),
-                      );
+
+                      try {
+                        await _account.changePassword(
+                          currentPassword: currentPasswordController.text,
+                          newPassword: newPasswordController.text,
+                        );
+                        if (!mounted) return;
+                        Navigator.pop(modalCtx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Senha alterada com sucesso!'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
+                      } on ApiException catch (error) {
+                        if (!mounted) return;
+                        // A folha fica aberta: senha atual errada se corrige
+                        // ali mesmo, sem refazer o caminho.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(error.message),
+                            backgroundColor: Colors.red[700],
+                          ),
+                        );
+                      }
                     },
                   ),
                 ],
@@ -246,12 +312,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _pushNotifications,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) =>
-                          setState(() => _pushNotifications = val),
+                      onChanged: (val) => _save('pushNotifications', val, (v) => _pushNotifications = v),
                     ),
-                    onTap: () => setState(
-                      () => _pushNotifications = !_pushNotifications,
-                    ),
+                    onTap: () => _save('pushNotifications', !_pushNotifications, (v) => _pushNotifications = v),
                   ),
                   const Divider(height: 1, indent: 16),
                   ListTile(
@@ -268,12 +331,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _emailNotifications,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) =>
-                          setState(() => _emailNotifications = val),
+                      onChanged: (val) => _save('emailNotifications', val, (v) => _emailNotifications = v),
                     ),
-                    onTap: () => setState(
-                      () => _emailNotifications = !_emailNotifications,
-                    ),
+                    onTap: () => _save('emailNotifications', !_emailNotifications, (v) => _emailNotifications = v),
                   ),
                 ],
               ),
@@ -308,11 +368,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _twoFactorEnabled,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) =>
-                          setState(() => _twoFactorEnabled = val),
+                      onChanged: (val) => _save('twoFactorEnabled', val, (v) => _twoFactorEnabled = v),
                     ),
-                    onTap: () =>
-                        setState(() => _twoFactorEnabled = !_twoFactorEnabled),
+                    onTap: () => _save('twoFactorEnabled', !_twoFactorEnabled, (v) => _twoFactorEnabled = v),
                   ),
                   const Divider(height: 1, indent: 16),
                   ListTile(
@@ -329,11 +387,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _biometricEnabled,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) =>
-                          setState(() => _biometricEnabled = val),
+                      onChanged: (val) => _save('biometricEnabled', val, (v) => _biometricEnabled = v),
                     ),
-                    onTap: () =>
-                        setState(() => _biometricEnabled = !_biometricEnabled),
+                    onTap: () => _save('biometricEnabled', !_biometricEnabled, (v) => _biometricEnabled = v),
                   ),
                   const Divider(height: 1, indent: 16),
                   ListTile(
@@ -350,9 +406,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _showPhone,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) => setState(() => _showPhone = val),
+                      onChanged: (val) => _save('showPhone', val, (v) => _showPhone = v),
                     ),
-                    onTap: () => setState(() => _showPhone = !_showPhone),
+                    onTap: () => _save('showPhone', !_showPhone, (v) => _showPhone = v),
                   ),
                   const Divider(height: 1, indent: 16),
                   ListTile(
@@ -369,9 +425,9 @@ class _ProviderSettingsPageState extends State<ProviderSettingsPage> {
                     trailing: CupertinoSwitch(
                       value: _showLocation,
                       activeTrackColor: colors.primary,
-                      onChanged: (val) => setState(() => _showLocation = val),
+                      onChanged: (val) => _save('showLocation', val, (v) => _showLocation = v),
                     ),
-                    onTap: () => setState(() => _showLocation = !_showLocation),
+                    onTap: () => _save('showLocation', !_showLocation, (v) => _showLocation = v),
                   ),
                   const Divider(height: 1, indent: 16),
                   ListTile(

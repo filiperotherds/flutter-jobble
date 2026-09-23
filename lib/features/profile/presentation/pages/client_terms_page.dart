@@ -89,14 +89,6 @@ class ClientTermsPage extends StatelessWidget {
 
         _buildSectionCard(
           number: '3',
-          title: 'Custódia de Pagamentos (Jobble Pay)',
-          content:
-              'Os pagamentos realizados pelo Cliente (Cartão de Crédito ou Pix) são retidos com total segurança em conta de custódia Jobble. O repasse ao Prestador só é liberado após a confirmação de conclusão do serviço pelo Cliente ou transcorrido o prazo de validação técnica sem contestações.',
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        _buildSectionCard(
-          number: '4',
           title: 'Política de Cancelamento',
           content:
               'O cancelamento solicitado pelo Cliente com mais de 24 horas de antecedência do horário agendado confere direito ao reembolso de 100% do valor retido. Cancelamentos com prazo inferior a 24 horas podem incorrer em taxa de deslocamento em favor do prestador.',

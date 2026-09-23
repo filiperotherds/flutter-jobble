@@ -3,10 +3,24 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:flutter_tcc/features/requests/domain/job_progress.dart';
+import 'package:flutter_tcc/features/requests/domain/job_progress_updates.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter_tcc/features/requests/presentation/widgets/add_job_step_bottom_sheet.dart';
+import 'package:flutter_tcc/features/requests/presentation/widgets/job_steps_checklist.dart';
+import 'package:flutter_tcc/features/requests/presentation/widgets/service_stepper.dart';
 
+/// Acompanhamento do serviço, do lado de quem executa.
+///
+/// Duas partes com funções distintas. Em cima, as etapas combinadas: é onde o
+/// profissional marca o que entregou, e é de lá que sai o andamento. Embaixo,
+/// o diário — os relatos que o cliente lê, do mais recente para o mais antigo.
+///
+/// A linha do tempo vertical que ligava os relatos saiu: a régua de etapas já
+/// é o indicador de progresso da tela, e duas trilhas competindo — uma para a
+/// direita, outra para baixo, com o mesmo verde significando coisas
+/// diferentes — só atrapalhavam a leitura.
 class ProviderJobTrackerPage extends StatefulWidget {
   const ProviderJobTrackerPage({super.key});
 
@@ -15,36 +29,17 @@ class ProviderJobTrackerPage extends StatefulWidget {
 }
 
 class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
-  double _overallProgress = 0.65;
+  /// Calculado, nunca digitado: sai das tarefas concluídas ou do prazo.
+  double get _overallProgress => JobProgress.value;
 
-  final List<Map<String, dynamic>> _steps = [
-    {
-      'title': 'Compra de materiais',
-      'desc':
-          'Comprei o cimento e a argamassa necessários para iniciar o trabalho amanhã cedo.',
-      'progress': 0.15,
-      'date': DateTime.now().subtract(const Duration(days: 2)),
-      'hasPhotos': true,
-    },
-    {
-      'title': 'Início da demolição',
-      'desc': 'Piso antigo removido com sucesso.',
-      'progress': 0.40,
-      'date': DateTime.now().subtract(const Duration(days: 1)),
-      'hasPhotos': false,
-    },
-    {
-      'title': 'Preparação do contrapiso',
-      'desc': 'Contrapiso nivelado e secando.',
-      'progress': 0.65,
-      'date': DateTime.now().subtract(const Duration(hours: 4)),
-      'hasPhotos': true,
-    },
-  ];
+  /// Mesma lista que alimenta a contagem no card do painel.
+  List<Map<String, dynamic>> get _updates => JobProgressUpdates.all;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Mais recente primeiro: é o estado atual do serviço.
+    final updates = _updates.reversed.toList();
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -53,9 +48,7 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
         elevation: 0.5,
         leading: IconButton(
           icon: Icon(LucideIcons.arrow_left, color: colors.textPrimary),
-          onPressed: () => Navigator.of(
-            context,
-          ).pop(_overallProgress), // Return new progress
+          onPressed: () => Navigator.of(context).pop(_overallProgress),
         ),
         title: Text(
           'Progresso do Serviço',
@@ -65,23 +58,27 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
           ),
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHeader(colors)),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final step =
-                    _steps[_steps.length -
-                        1 -
-                        index]; // Reverse order (newest first)
-                final isFirst = index == 0;
-                final isLast = index == _steps.length - 1;
-                return _buildTimelineItem(step, isFirst, isLast, colors);
-              }, childCount: _steps.length),
-            ),
-          ),
+      body: ListView(
+        // Espaço para o botão flutuante não cobrir o último relato.
+        padding: const EdgeInsets.only(bottom: 96),
+        children: [
+          _buildHeader(colors),
+          _buildStepsSection(colors),
+          if (updates.isEmpty)
+            _buildEmpty(colors)
+          else ...[
+            _buildDiaryHeader(colors, updates.length),
+            for (var i = 0; i < updates.length; i++)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  i == updates.length - 1 ? 0 : AppSpacing.md,
+                ),
+                child: _UpdateCard(update: updates[i], isLatest: i == 0),
+              ),
+          ],
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -129,7 +126,7 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
           const SizedBox(height: 4),
           Text(
             'Cliente: Mariana • R. das Flores, 123',
-            style: AppTypography.body.copyWith(color: Colors.grey[700]),
+            style: AppTypography.body.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.xl),
           Row(
@@ -139,7 +136,7 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
                 'Progresso Geral',
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: colors.textPrimary,
                 ),
               ),
               Text(
@@ -151,149 +148,139 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: _overallProgress,
-              minHeight: 12,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-            ),
+          const SizedBox(height: AppSpacing.md),
+          // Só o resumo visual do andamento. Quem recebe o toque é a lista de
+          // etapas logo abaixo — uma régua de bolinhas não é lugar de botão.
+          ServiceStepper(steps: JobProgress.tasks, showLabels: false),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _stepsSummary(),
+            style: AppTypography.caption.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimelineItem(
-    Map<String, dynamic> step,
-    bool isFirst,
-    bool isLast,
-    AppColorsTheme colors,
-  ) {
-    final date = step['date'] as DateTime;
-    final formattedDate = DateFormat("dd/MM 'às' HH:mm").format(date);
+  /// A régua em palavras, para quem não decifra o desenho de primeira.
+  String _stepsSummary() {
+    final tasks = JobProgress.tasks;
+    if (tasks.isEmpty) return 'Avança junto com o prazo combinado.';
 
-    return IntrinsicHeight(
-      child: Row(
+    final done = JobProgress.doneCount;
+    if (done == tasks.length) return 'Todas as etapas concluídas.';
+
+    final current = tasks.firstWhere((task) => !task.done);
+    return '$done de ${tasks.length} etapas concluídas · '
+        'agora: ${current.title}';
+  }
+
+  /// A lista onde o profissional marca o que entregou.
+  Widget _buildStepsSection(AppColorsTheme colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        0,
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline indicator
-          Column(
+          Row(
             children: [
-              Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: isFirst ? colors.primary : Colors.grey[300],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                    ),
-                  ],
+              Icon(
+                LucideIcons.list_checks,
+                size: 16,
+                color: colors.primary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Etapas do serviço',
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: Colors.grey[300])),
+              Text(
+                '${JobProgress.doneCount}/${JobProgress.tasks.length}',
+                style: AppTypography.caption.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
             ],
           ),
-          const SizedBox(width: AppSpacing.md),
-          // Content card
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-              child: Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            step['title'],
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          formattedDate,
-                          style: AppTypography.caption.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (step['desc'] != null &&
-                        step['desc'].toString().isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        step['desc'],
-                        style: AppTypography.body.copyWith(
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                    if (step['hasPhotos'] == true) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          _buildMiniPhoto(colors),
-                          const SizedBox(width: AppSpacing.sm),
-                          _buildMiniPhoto(colors),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Progresso: ${(step['progress'] * 100).toInt()}%',
-                        style: AppTypography.caption.copyWith(
-                          color: colors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            'É daqui que sai o progresso que o cliente vê. Toque na etapa '
+            'quando terminar.',
+            style: AppTypography.caption.copyWith(color: colors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          JobStepsChecklist(
+            steps: JobProgress.tasks,
+            onToggle: (index) => setState(() {
+              final task = JobProgress.tasks[index];
+              task.done = !task.done;
+            }),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniPhoto(AppColorsTheme colors) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        color: colors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.borderLight),
+  Widget _buildDiaryHeader(AppColorsTheme colors, int count) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.md,
       ),
-      child: const Center(
-        child: Icon(LucideIcons.image, size: 20, color: Colors.grey),
+      child: Row(
+        children: [
+          Icon(LucideIcons.message_square, size: 16, color: colors.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'Diário do serviço',
+              style: AppTypography.body.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          Text(
+            count == 1 ? '1 relato enviado' : '$count relatos enviados',
+            style: AppTypography.caption.copyWith(color: colors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty(AppColorsTheme colors) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: Column(
+        children: [
+          Icon(LucideIcons.camera, size: 48, color: colors.borderLight),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Nenhum relato ainda',
+            style: AppTypography.h3.copyWith(color: colors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Uma foto e duas linhas do que você fez hoje poupam o cliente de '
+            'perguntar. Toque em "Nova Atualização".',
+            style: AppTypography.body.copyWith(color: colors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -301,20 +288,195 @@ class _ProviderJobTrackerPageState extends State<ProviderJobTrackerPage> {
   Future<void> _openAddStepModal(BuildContext context) async {
     final result = await AddJobStepBottomSheet.show(context, _overallProgress);
     if (result != null) {
-      setState(() {
-        _steps.add(result);
-        _overallProgress = result['progress'];
-      });
+      setState(() => JobProgressUpdates.add(result));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Progresso atualizado com sucesso! O cliente foi notificado.',
+              'Relato publicado! O cliente já consegue ver no app dele.',
             ),
             backgroundColor: Colors.green,
           ),
         );
       }
     }
+  }
+}
+
+/// "Hoje às 14:20" diz mais do que "22/09 às 14:20" para quem acompanha um
+/// serviço em andamento. A data cheia volta quando o relato já é antigo.
+String friendlyUpdateDate(DateTime date, {DateTime? now}) {
+  final moment = now ?? DateTime.now();
+  final today = DateTime(moment.year, moment.month, moment.day);
+  final day = DateTime(date.year, date.month, date.day);
+  final days = today.difference(day).inDays;
+  final hour = DateFormat('HH:mm').format(date);
+
+  if (days == 0) return 'Hoje às $hour';
+  if (days == 1) return 'Ontem às $hour';
+  if (days < 7) return 'Há $days dias, às $hour';
+  return DateFormat("dd/MM 'às' HH:mm").format(date);
+}
+
+/// Um relato publicado: o que foi feito, quando, com as fotos.
+class _UpdateCard extends StatelessWidget {
+  const _UpdateCard({required this.update, required this.isLatest});
+
+  final Map<String, dynamic> update;
+
+  /// O mais recente é o que o cliente vê no topo do app dele.
+  final bool isLatest;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final description = update['desc']?.toString() ?? '';
+    final photos = (update['photos'] as List?)?.cast<String>() ?? const [];
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isLatest ? colors.primary : colors.borderLight,
+          width: isLatest ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  update['title']?.toString() ?? '',
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              if (isLatest) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Mais recente',
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Icon(LucideIcons.clock, size: 12, color: colors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                friendlyUpdateDate(update['date'] as DateTime),
+                style: AppTypography.caption.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              description,
+              style: AppTypography.caption.copyWith(
+                color: colors.textSecondary,
+                height: 1.45,
+              ),
+            ),
+          ],
+          if (photos.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              height: 88,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photos.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(width: AppSpacing.sm),
+                itemBuilder: (context, index) => GestureDetector(
+                  onTap: () => _openPhoto(context, photos, index),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      photos[index],
+                      width: 110,
+                      height: 88,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ] else if (update['hasPhotos'] == true) ...[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                _buildMiniPhoto(colors),
+                const SizedBox(width: AppSpacing.sm),
+                _buildMiniPhoto(colors),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniPhoto(AppColorsTheme colors) {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        color: colors.surfaceLight,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.borderLight),
+      ),
+      child: Center(
+        child: Icon(LucideIcons.image, size: 20, color: colors.textSecondary),
+      ),
+    );
+  }
+
+  /// Mesma ampliação que o cliente tem: vale conferir como a foto chegou lá.
+  void _openPhoto(BuildContext context, List<String> photos, int index) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: Text(
+              update['title']?.toString() ?? '',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(child: Image.asset(photos[index])),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
 import 'package:flutter_tcc/core/state/jobble_quote_state.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
+import 'package:flutter_tcc/features/quotes/data/quote_models.dart';
+import 'package:flutter_tcc/features/quotes/data/quotes_api.dart';
 import 'package:flutter_tcc/features/requests/presentation/services/quote_pdf_service.dart';
+import 'package:flutter_tcc/injection_container.dart';
 
 class ProviderQuoteGeneratorPage extends StatefulWidget {
-  const ProviderQuoteGeneratorPage({super.key});
+  /// O pedido que originou este orçamento. Quando vem preenchido, "enviar"
+  /// grava a proposta no servidor e ela chega no chat do cliente; sem ele a
+  /// tela segue como demonstração.
+  final QuoteRequest? quoteRequest;
+
+  const ProviderQuoteGeneratorPage({super.key, this.quoteRequest});
 
   @override
   State<ProviderQuoteGeneratorPage> createState() =>
@@ -26,6 +36,12 @@ class _ProviderQuoteGeneratorPageState
 
   final List<Map<String, dynamic>> _materiais = [];
 
+  /// A janela combinada, escolhida no calendário. O texto do campo é só o
+  /// jeito de ler essas duas datas — quem manda são elas, porque é delas que
+  /// sai o prazo do contrato e a barra de andamento do card.
+  DateTime? _startsOn;
+  DateTime? _endsOn;
+
   final TextEditingController _prazoController = TextEditingController(
     text: '3 dias \u00fateis (15/10 a 18/10)',
   );
@@ -39,6 +55,41 @@ class _ProviderQuoteGeneratorPageState
     text:
         'Incluso aplica\u00e7\u00e3o de 2 dem\u00e3os de tinta e lixamento pr\u00e9vio.',
   );
+
+  /// Escolhe o começo e a entrega no calendário.
+  ///
+  /// O intervalo é inclusivo: de 15/10 a 18/10 são quatro dias de obra, não
+  /// três — quem marca a agenda conta o primeiro dia.
+  Future<void> _pickWindow() async {
+    final today = DateTime.now();
+    final initial = _startsOn != null && _endsOn != null
+        ? DateTimeRange(start: _startsOn!, end: _endsOn!)
+        : null;
+
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(today.year, today.month, today.day),
+      lastDate: DateTime(today.year + 2, today.month, today.day),
+      initialDateRange: initial,
+      helpText: 'Quando o serviço começa e termina',
+      saveText: 'Confirmar',
+    );
+
+    if (range == null || !mounted) return;
+
+    setState(() {
+      _startsOn = range.start;
+      _endsOn = range.end;
+      _prazoController.text = _windowLabel(range.start, range.end);
+    });
+  }
+
+  static String _windowLabel(DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final format = DateFormat('dd/MM');
+    final label = days == 1 ? '1 dia' : '$days dias';
+    return '$label (${format.format(start)} a ${format.format(end)})';
+  }
 
   @override
   void dispose() {
@@ -351,10 +402,20 @@ class _ProviderQuoteGeneratorPageState
               children: [
                 TextFormField(
                   controller: _prazoController,
+                  // Só leitura: a data vem do calendário, não digitada. Um
+                  // texto livre aqui não vira prazo de contrato nem barra de
+                  // andamento — vira só uma frase.
+                  readOnly: true,
+                  onTap: _pickWindow,
                   decoration: InputDecoration(
                     labelText: 'Prazo de Entrega / Execu\u00e7\u00e3o',
                     labelStyle: TextStyle(color: Colors.grey[600]),
-                    hintText: 'Ex: 3 dias \u00fateis (15/10 a 18/10)',
+                    hintText: 'Toque para escolher as datas',
+                    suffixIcon: Icon(
+                      LucideIcons.calendar,
+                      color: colors.primary,
+                      size: 18,
+                    ),
                     prefixIcon: Icon(
                       LucideIcons.clock,
                       color: colors.primary,
@@ -515,6 +576,9 @@ class _ProviderQuoteGeneratorPageState
                           condicaoPagamento: _condicoesController.text,
                           garantia: _garantiaController.text,
                           observacoes: _observacoesController.text,
+                          quoteRequest: widget.quoteRequest,
+                          startsOn: _startsOn,
+                          endsOn: _endsOn,
                         ),
                       ),
                     );
@@ -600,6 +664,13 @@ class ProviderQuotePreviewPage extends StatefulWidget {
   final String observacoes;
   final bool isReadOnly;
 
+  /// Pedido de origem. Com ele, enviar grava de verdade.
+  final QuoteRequest? quoteRequest;
+
+  /// A janela combinada, escolhida no calendário da tela anterior.
+  final DateTime? startsOn;
+  final DateTime? endsOn;
+
   const ProviderQuotePreviewPage({
     super.key,
     required this.items,
@@ -609,6 +680,9 @@ class ProviderQuotePreviewPage extends StatefulWidget {
     this.garantia = '',
     this.observacoes = '',
     this.isReadOnly = false,
+    this.quoteRequest,
+    this.startsOn,
+    this.endsOn,
   });
 
   @override
@@ -630,6 +704,80 @@ class _ProviderQuotePreviewPageState extends State<ProviderQuotePreviewPage> {
       _providerSignedDate =
           quoteState.providerSignedDate ?? '18/09/2026 às 14:35';
       _savedSignaturePoints = List.from(quoteState.providerSignaturePoints);
+    }
+  }
+
+  static String _windowLabel(DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final format = DateFormat('dd/MM');
+    final label = days == 1 ? '1 dia' : '$days dias';
+    return '$label (${format.format(start)} a ${format.format(end)})';
+  }
+
+  bool _sending = false;
+
+  /// Extrai um número de dias de um texto livre como "3 dias úteis (15/10 a
+  /// 18/10)". O formulário foi desenhado para uma pessoa ler; o servidor
+  /// guarda o número, que é o que o card da conversa mostra.
+  static int _days(String text, {required int fallback}) {
+    final match = RegExp(r'(\d+)').firstMatch(text);
+    if (match == null) return fallback;
+    return int.tryParse(match.group(1)!) ?? fallback;
+  }
+
+  /// Envia a proposta ao cliente.
+  ///
+  /// Sem assinatura nenhuma: quem assina primeiro é o cliente, e a confirmação
+  /// do profissional vem depois, pela conversa. Enviar aqui é só colocar o
+  /// orçamento na mão de quem pediu.
+  Future<void> _sendProposal() async {
+    final request = widget.quoteRequest;
+    if (request == null || _sending) return;
+
+    setState(() => _sending = true);
+
+    try {
+      await sl<QuotesApi>().createProposal(
+        requestId: request.id,
+        title: request.title,
+        amountCents: (widget.total * 100).round(),
+        deadlineDays: widget.startsOn != null && widget.endsOn != null
+            ? widget.endsOn!.difference(widget.startsOn!).inDays + 1
+            : _days(widget.prazoEntrega, fallback: 3),
+        warrantyDays: _days(widget.garantia, fallback: 90),
+        startsOn: widget.startsOn,
+        endsOn: widget.endsOn,
+        notes: [
+          if (widget.condicaoPagamento.trim().isNotEmpty)
+            'Pagamento: ${widget.condicaoPagamento.trim()}',
+          if (widget.observacoes.trim().isNotEmpty) widget.observacoes.trim(),
+        ].join('\n'),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Orçamento enviado! Agora é a vez do cliente assinar.',
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).popUntil(
+        (route) =>
+            route.settings.name == 'provider_shell' || route.isFirst,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -1423,7 +1571,9 @@ class _ProviderQuotePreviewPageState extends State<ProviderQuotePreviewPage> {
                                   ],
                                 ] else ...[
                                   Text(
-                                    'Você assinará ao enviar',
+                                    widget.quoteRequest != null
+                                        ? 'Você assina depois do cliente'
+                                        : 'Você assinará ao enviar',
                                     style: AppTypography.caption.copyWith(
                                       fontSize: 9,
                                       color: Colors.orange[900],
@@ -1599,15 +1749,25 @@ class _ProviderQuotePreviewPageState extends State<ProviderQuotePreviewPage> {
                             ),
                           )
                         : ElevatedButton.icon(
-                            onPressed: _openProviderSignatureModal,
-                            icon: const Icon(
-                              LucideIcons.pen_tool,
+                            onPressed: _sending
+                                ? null
+                                : (widget.quoteRequest != null
+                                      ? _sendProposal
+                                      : _openProviderSignatureModal),
+                            icon: Icon(
+                              widget.quoteRequest != null
+                                  ? LucideIcons.send
+                                  : LucideIcons.pen_tool,
                               color: Colors.white,
                               size: 20,
                             ),
-                            label: const Text(
-                              'Assinar e Enviar',
-                              style: TextStyle(
+                            label: Text(
+                              widget.quoteRequest != null
+                                  ? (_sending
+                                        ? 'Enviando...'
+                                        : 'Enviar ao Cliente')
+                                  : 'Assinar e Enviar',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),

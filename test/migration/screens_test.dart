@@ -9,13 +9,11 @@ import '../home/provider_shell_test.dart' show TestAuthBloc;
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_services_catalog_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_profile_tab.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_portfolio_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_transfers_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_registration_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_help_center_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_edit_profile_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_signup_wizard_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_performance_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_banking_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_settings_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_agenda_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_messages_page.dart';
@@ -46,13 +44,11 @@ void main() {
     'ProviderServicesCatalogPage': () => const ProviderServicesCatalogPage(),
     'ProviderProfileTab': () => const ProviderProfileTab(),
     'ProviderPortfolioPage': () => const ProviderPortfolioPage(),
-    'ProviderTransfersPage': () => const ProviderTransfersPage(),
     'ProviderRegistrationPage': () => const ProviderRegistrationPage(),
     'ProviderHelpCenterPage': () => const ProviderHelpCenterPage(),
     'ProviderEditProfilePage': () => const ProviderEditProfilePage(),
     'ProviderSignupWizardPage': () => const ProviderSignupWizardPage(),
     'ProviderPerformancePage': () => const ProviderPerformancePage(),
-    'ProviderBankingPage': () => const ProviderBankingPage(),
     'ProviderSettingsPage': () => const ProviderSettingsPage(),
     'ProviderAgendaPage': () => const ProviderAgendaPage(),
     'ProviderMessagesPage': () => const ProviderMessagesPage(),

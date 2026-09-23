@@ -3,9 +3,62 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_tcc/features/reviews/data/review_models.dart';
+import 'package:flutter_tcc/features/reviews/data/reviews_api.dart';
+import 'package:flutter_tcc/features/reviews/presentation/pages/provider_reviews_page.dart';
+import 'package:flutter_tcc/injection_container.dart';
 
-class ProviderNotificationsPage extends StatelessWidget {
+/// As notificações do profissional.
+///
+/// As avaliações recebidas entram no topo, vindas do servidor: é onde a
+/// pessoa vai olhar quando o sino acender, e daqui ela chega direto ao lugar
+/// de responder. Os demais avisos da tela ainda são locais.
+class ProviderNotificationsPage extends StatefulWidget {
   const ProviderNotificationsPage({super.key});
+
+  @override
+  State<ProviderNotificationsPage> createState() =>
+      _ProviderNotificationsPageState();
+}
+
+class _ProviderNotificationsPageState extends State<ProviderNotificationsPage> {
+  List<Review> _reviews = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    try {
+      final page = await sl<ReviewsApi>().received();
+      if (!mounted) return;
+      // Só as recentes viram aviso: notificação é sobre o que acabou de
+      // acontecer, não o histórico inteiro.
+      setState(() {
+        _reviews = page.items
+            .where(
+              (review) =>
+                  review.unread ||
+                  DateTime.now().difference(review.createdAt).inDays <= 7,
+            )
+            .toList();
+      });
+    } catch (_) {
+      // Sem servidor, a tela segue com os avisos locais.
+    }
+  }
+
+  Future<void> _openReviews() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ProviderReviewsPage(onlyUnanswered: true),
+      ),
+    );
+    if (mounted) _loadReviews();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +97,27 @@ class ProviderNotificationsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         children: [
+          if (_reviews.isNotEmpty) ...[
+            _buildDateHeader('Avaliações'),
+            for (final review in _reviews)
+              _buildNotificationItem(
+                icon: Icons.star_rounded,
+                iconColor: Colors.orange,
+                iconBg: Colors.orange[50]!,
+                title: review.answered
+                    ? 'Avaliação de ${review.author.display}'
+                    : 'Nova avaliação de ${review.author.display}',
+                message: review.answered
+                    ? '${review.rating} estrelas · você já respondeu.'
+                    : '${review.rating} estrelas · "${review.comment}" '
+                          'Toque para responder.',
+                time: DateFormat('HH:mm').format(review.createdAt),
+                isUnread: review.unread,
+                colors: colors,
+                onTap: _openReviews,
+              ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           _buildDateHeader('Hoje'),
           _buildNotificationItem(
             icon: LucideIcons.file_text,
@@ -53,17 +127,6 @@ class ProviderNotificationsPage extends StatelessWidget {
             message:
                 'O cliente Gabriel aprovou seu orçamento para Pintura Residencial.',
             time: '14:35',
-            isUnread: true,
-            colors: colors,
-          ),
-          _buildNotificationItem(
-            icon: LucideIcons.wallet,
-            iconColor: Colors.blue,
-            iconBg: Colors.blue[50]!,
-            title: 'Pagamento em Custódia',
-            message:
-                'O valor de R\$ 790,00 foi retido e está garantido na plataforma.',
-            time: '14:40',
             isUnread: true,
             colors: colors,
           ),
@@ -121,8 +184,9 @@ class ProviderNotificationsPage extends StatelessWidget {
     required String time,
     required bool isUnread,
     required AppColorsTheme colors,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    final item = Container(
       color: isUnread
           ? colors.primary.withValues(alpha: 0.05)
           : Colors.transparent,
@@ -179,6 +243,13 @@ class ProviderNotificationsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (onTap == null) return item;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onTap, child: item),
     );
   }
 }

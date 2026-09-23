@@ -1,9 +1,16 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter_tcc/core/network/dio_client.dart';
+import 'package:flutter_tcc/features/quotes/data/quotes_api.dart';
+import 'package:flutter_tcc/features/profile/data/performance_api.dart';
+import 'package:flutter_tcc/features/reviews/data/reviews_api.dart';
+import 'package:flutter_tcc/features/quotes/presentation/bloc/conversations_cubit.dart';
+import 'package:flutter_tcc/features/quotes/presentation/bloc/quote_requests_cubit.dart';
+import 'package:flutter_tcc/features/quotes/presentation/bloc/service_contracts_cubit.dart';
 import 'package:flutter_tcc/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:flutter_tcc/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:flutter_tcc/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:flutter_tcc/features/auth/domain/repositories/auth_repository.dart';
+import 'package:flutter_tcc/features/auth/domain/usecases/google_login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/verify_email_usecase.dart';
@@ -41,6 +48,7 @@ Future<void> init() async {
   sl.registerFactory(
     () => AuthBloc(
       loginUseCase: sl(),
+      googleLoginUseCase: sl(),
       signupUseCase: sl(),
       verifyEmailUseCase: sl(),
       completeOnboardingUseCase: sl(),
@@ -54,6 +62,7 @@ Future<void> init() async {
 
   // Use cases
   sl.registerLazySingleton(() => LoginUseCase(repository: sl()));
+  sl.registerLazySingleton(() => GoogleLoginUseCase(repository: sl()));
   sl.registerLazySingleton(() => SignupUseCase(repository: sl()));
   sl.registerLazySingleton(() => VerifyEmailUseCase(repository: sl()));
   sl.registerLazySingleton(() => CompleteOnboardingUseCase(repository: sl()));
@@ -95,6 +104,15 @@ Future<void> init() async {
   // Core
   sl.registerLazySingleton(() => DatabaseHelper());
   sl.registerLazySingleton(() => DioClient(tokenService: sl()));
+
+  // O fluxo de orçamento visto do lado de quem executa: pedidos recebidos,
+  // conversas, propostas enviadas e os contratos que nascem delas.
+  sl.registerLazySingleton(() => QuotesApi(sl<DioClient>()));
+  sl.registerLazySingleton(() => ReviewsApi(sl<DioClient>()));
+  sl.registerLazySingleton(() => PerformanceApi(sl<DioClient>()));
+  sl.registerFactory(() => QuoteRequestsCubit(api: sl()));
+  sl.registerFactory(() => ConversationsCubit(api: sl()));
+  sl.registerFactory(() => ServiceContractsCubit(api: sl()));
   sl.registerLazySingleton(() => OnboardingReminders(dioClient: sl()));
   sl.registerLazySingleton(() => TokenService());
   sl.registerLazySingleton(() => ThemeCubit());

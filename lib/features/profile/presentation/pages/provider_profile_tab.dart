@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:flutter_tcc/features/auth/presentation/widgets/sign_out_button.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
@@ -171,21 +172,9 @@ class ProviderProfileTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Botão de sair
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Desloga o prestador
-              },
-              icon: const Icon(LucideIcons.log_out, color: Colors.red),
-              label: const Text('Sair da conta', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[50],
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: SignOutButton(),
           ),
           
           const SizedBox(height: AppSpacing.xxl),

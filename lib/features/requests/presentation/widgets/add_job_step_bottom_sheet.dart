@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:flutter_tcc/features/requests/domain/job_progress.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/core/widgets/app_text_field.dart';
 
@@ -31,13 +32,11 @@ class AddJobStepBottomSheet extends StatefulWidget {
 class _AddJobStepBottomSheetState extends State<AddJobStepBottomSheet> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  late double _progress;
   bool _hasPhotos = false;
 
   @override
   void initState() {
     super.initState();
-    _progress = widget.currentProgress;
   }
 
   @override
@@ -108,37 +107,6 @@ class _AddJobStepBottomSheetState extends State<AddJobStepBottomSheet> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   Text(
-                    'Atualizar Progresso (${(_progress * 100).toInt()}%)',
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: colors.primary,
-                      inactiveTrackColor: colors.borderLight,
-                      thumbColor: colors.primary,
-                      overlayColor: colors.primary.withValues(alpha: 0.1),
-                    ),
-                    child: Slider(
-                      value: _progress,
-                      min: widget.currentProgress,
-                      max: 1.0,
-                      divisions:
-                          ((1.0 - widget.currentProgress) * 100).toInt() > 0
-                          ? ((1.0 - widget.currentProgress) * 100).toInt()
-                          : 1,
-                      label: '${(_progress * 100).toInt()}%',
-                      onChanged: (val) {
-                        setState(() {
-                          _progress = val;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
                     'Fotos ou Anexos',
                     style: AppTypography.body.copyWith(
                       fontWeight: FontWeight.bold,
@@ -177,7 +145,7 @@ class _AddJobStepBottomSheetState extends State<AddJobStepBottomSheet> {
                       Navigator.of(context).pop({
                         'title': _titleController.text,
                         'desc': _descController.text,
-                        'progress': _progress,
+                        'progress': JobProgress.value,
                         'hasPhotos': _hasPhotos,
                         'date': DateTime.now(),
                       });
