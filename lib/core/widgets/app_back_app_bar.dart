@@ -63,10 +63,7 @@ class AppBackAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-      actions: [
-        ...?actions,
-        const SizedBox(width: AppSpacing.xs),
-      ],
+      actions: [...?actions, const SizedBox(width: AppSpacing.xs)],
     );
   }
 }

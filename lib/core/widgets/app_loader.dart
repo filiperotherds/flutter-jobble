@@ -9,12 +9,7 @@ import 'package:flutter_tcc/core/theme/app_typography.dart';
 /// pode ser sobrescrita quando o loader fica sobre uma superfície de alto
 /// contraste (dentro da CTA, por exemplo).
 class AppLoader extends StatelessWidget {
-  const AppLoader({
-    super.key,
-    this.size = 20,
-    this.color,
-    this.strokeWidth = 2,
-  });
+  const AppLoader({super.key, this.size = 20, this.color, this.strokeWidth = 2});
 
   final double size;
   final Color? color;
