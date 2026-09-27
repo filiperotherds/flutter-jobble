@@ -41,11 +41,17 @@ class ProviderTipsPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Icon(
-                    LucideIcons.award,
-                    size: 64,
-                    color: Colors.white,
+                  Transform.scale(
+                    scale: 1.45,
+                    child: SizedBox(
+                      height: 190,
+                      child: Image.asset(
+                        'assets/images/joberto_tips_header.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 20),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Seja um Prestador 5 Estrelas',

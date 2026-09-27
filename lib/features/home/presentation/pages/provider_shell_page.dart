@@ -456,112 +456,105 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
               const SizedBox(height: AppSpacing.lg),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    gradient: AppColorsTheme.brandGradient,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProviderTipsPage()),
+                      );
+                    },
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    children: [
-                      // Ícones de fundo estilo Jobble
-                      Positioned(
-                        right: -10,
-                        bottom: -20,
-                        child: Transform.rotate(
-                          angle: -0.2,
-                          child: Icon(
-                            LucideIcons.award,
-                            size: 110,
-                            color: Colors.white.withValues(alpha: 0.35),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fundo branco mescla com a imagem
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFBBF7D0), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
                       ),
-                      Positioned(
-                        right: 80,
-                        top: -10,
-                        child: Transform.rotate(
-                          angle: 0.3,
-                          child: Icon(
-                            LucideIcons.star,
-                            size: 60,
-                            color: Colors.white.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                      // Conteúdo
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
+                          // Mascote Segurando a Estrela
+                          ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(15),
+                              bottomLeft: Radius.circular(15),
+                            ),
+                            child: SizedBox(
+                              width: 120, // Largura fixa
+                              height: 140, // Altura fixa
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8, bottom: 8, left: 4),
+                                child: Image.asset(
+                                  'assets/images/joberto_star.jpg',
+                                  fit: BoxFit.contain, // Contain no fundo branco fica perfeito
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Conteúdo
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Preste um serviço 5 estrelas!',
-                                  style: AppTypography.h2.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF14300A),
-                                    height: 1.2,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.sparkles, color: Color(0xFF16A34A), size: 16),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          'Dicas do Joberto!',
+                                          style: AppTypography.body.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            color: const Color(0xFF16A34A),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Um bom atendimento garante ótimas avaliações e mais clientes para você.',
-                                  style: AppTypography.caption.copyWith(
-                                    color: const Color(0xFF1B4310),
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const ProviderTipsPage()),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0D2506),
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Veja o segredo para prestar um serviço 5 estrelas e ter agenda cheia!',
+                                    style: AppTypography.caption.copyWith(
+                                      color: const Color(0xFF475569),
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.3,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  const SizedBox(height: 12),
+                                  Row(
                                     children: [
                                       Text(
                                         'Ver dicas de ouro',
-                                        style: AppTypography.body.copyWith(
+                                        style: AppTypography.caption.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: Colors.white,
+                                          color: const Color(0xFF0F172A),
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      const Icon(LucideIcons.arrow_right, size: 16, color: Colors.white),
+                                      const Icon(LucideIcons.arrow_right, size: 14, color: Color(0xFF0F172A)),
                                     ],
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -612,6 +605,8 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                 )
               else
                 _buildPendingSection(quoteState, const []),
+                const SizedBox(height: 48),
+
 
               // Atalhos Rápidos
               Padding(
@@ -696,8 +691,8 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
               SizedBox(height: AppSpacing.xl),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
-                child: const Icon(LucideIcons.circle_check, color: Colors.blue, size: 48),
+                decoration: BoxDecoration(color: const Color(0xFF1C574A).withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: Icon(LucideIcons.circle_check, color: Colors.grey[800], size: 48),
               ),
               SizedBox(height: AppSpacing.lg),
               Text('Finalizar Serviço', style: AppTypography.h2.copyWith(fontWeight: FontWeight.bold)),
@@ -743,7 +738,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF1C574A),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
@@ -840,10 +835,10 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.6), width: 1.5),
+        border: Border.all(color: Colors.grey[300]!, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEA580C).withValues(alpha: 0.07),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -858,20 +853,20 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFED7AA)),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(LucideIcons.sparkles, size: 12, color: Color(0xFFC2410C)),
+                    Icon(LucideIcons.sparkles, size: 12, color: Color(0xFF475569)),
                     SizedBox(width: 4),
                     Text(
                       'Novo Pedido',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFFC2410C),
+                        color: Color(0xFF475569),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -900,8 +895,8 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       ? () => _declineRequest(request)
                       : _showDeclineJobConfirmation,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red[600],
-                    side: BorderSide(color: Colors.red[200]!),
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -922,7 +917,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                     _requestsCubit?.load(silent: true);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEA580C),
+                    backgroundColor: const Color(0xFF1C574A),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
@@ -984,10 +979,10 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(color: const Color(0xFF1C574A).withValues(alpha: 0.5), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.05),
+            color: const Color(0xFF1C574A).withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1018,18 +1013,18 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
+                        color: const Color(0xFF1C574A).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         period,
                         style: AppTypography.caption.copyWith(
-                          color: Colors.blue[800],
+                          color: Colors.grey[800],
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    Text('Em andamento', style: AppTypography.caption.copyWith(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    Text('Em andamento', style: AppTypography.caption.copyWith(color: Colors.grey[800], fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1050,7 +1045,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       schedule != null ? 'Prazo do Serviço' : 'Progresso do Serviço',
                       style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[800]),
                     ),
-                    Text('${(progress * 100).toInt()}%', style: AppTypography.caption.copyWith(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    Text('${(progress * 100).toInt()}%', style: AppTypography.caption.copyWith(color: Colors.grey[800], fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -1063,7 +1058,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                     child: LinearProgressIndicator(
                       value: schedule,
                       backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1C574A)),
                       minHeight: 8,
                     ),
                   ),
@@ -1113,12 +1108,12 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                             ),
                           );
                         },
-                        icon: const Icon(LucideIcons.message_circle, size: 16, color: Colors.blue),
+                        icon: const Icon(LucideIcons.message_circle, size: 16, color: Color(0xFF475569)),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.blue),
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        label: const Text('Mensagem', style: TextStyle(color: Colors.blue)),
+                        label: const Text('Mensagem', style: TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w600)),
                       ),
                     ),
                     SizedBox(width: AppSpacing.sm),
@@ -1128,7 +1123,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                             _showFinishJobConfirmation(contract: contract),
                         icon: const Icon(LucideIcons.circle_check, size: 16, color: Colors.white),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF1C574A),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         label: const Text('Finalizar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -1153,7 +1148,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
 
     return _buildExpandableSection(
       title: 'Trabalhos em andamento (${cards.length})',
-      dotColor: const Color(0xFF2563EB),
+      dotColor: const Color(0xFF1C574A),
       initiallyExpanded: true,
       children: [
         for (final card in cards)
@@ -1179,7 +1174,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
 
     return _buildExpandableSection(
       title: 'Aguardando retorno do cliente (${cards.length})',
-      dotColor: const Color(0xFF7C3AED),
+      dotColor: const Color(0xFF475569),
       initiallyExpanded: true,
       children: [
         for (final card in cards) ...[
@@ -1202,7 +1197,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
 
     return _buildExpandableSection(
       title: 'Aguardando orçamento (${cards.length})',
-      dotColor: const Color(0xFFEA580C),
+      dotColor: const Color(0xFF475569),
       initiallyExpanded: true,
       children: [
         for (final card in cards) ...[
@@ -1237,7 +1232,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     if (proposal != null && proposal.awaitsProvider) {
       return Colors.green.shade800;
     }
-    return const Color(0xFF6D28D9);
+    return const Color(0xFF475569);
   }
 
   /// A linha que diz em que pé está a negociação, do ponto de vista de quem
@@ -1323,10 +1318,10 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(color: Colors.grey[300]!, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7C3AED).withValues(alpha: 0.07),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1341,9 +1336,9 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFDDD6FE)),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1351,7 +1346,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                     Icon(
                       myTurn ? LucideIcons.badge_check : LucideIcons.clock,
                       size: 13,
-                      color: const Color(0xFF6D28D9),
+                      color: const Color(0xFF475569),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -1360,7 +1355,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                           : 'Aguardando $clientName',
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6D28D9),
+                        color: Color(0xFF475569),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1391,9 +1386,9 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFAF5FF),
+              color: Colors.grey[50],
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFEDE9FE)),
+              border: Border.all(color: Colors.grey[200]!),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1411,7 +1406,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(0xFF6D28D9),
+                          color: Color(0xFF475569),
                         ),
                       ),
                       const Text('•', style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 12)),
@@ -1518,7 +1513,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: const Color(0xFF475569),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
@@ -1600,7 +1595,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                   side: const BorderSide(color: Color(0xFFDDD6FE)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Icon(LucideIcons.message_circle, size: 18, color: Color(0xFF6D28D9)),
+                child: const Icon(LucideIcons.message_circle, size: 18, color: Color(0xFF475569)),
               ),
             ],
           ),
@@ -1643,7 +1638,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       'Simular aceite do Gabriel (iniciar serviço)',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6D28D9),
+                        color: Color(0xFF475569),
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
                       ),
@@ -1981,13 +1976,13 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.06),
+        color: const Color(0xFF1C574A).withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+        border: Border.all(color: const Color(0xFF1C574A).withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.camera, size: 16, color: Colors.blue),
+          Icon(LucideIcons.camera, size: 16, color: Colors.grey),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -2000,7 +1995,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       ? '1 atualização publicada'
                       : '$count atualizações publicadas',
                   style: AppTypography.caption.copyWith(
-                    color: Colors.blue[800],
+                    color: Colors.grey[800],
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -2009,14 +2004,14 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                       ? 'Toque para adicionar fotos e comentários que a Mariana vê'
                       : 'Fotos, comentários e as ${JobProgress.tasks.length} etapas do serviço',
                   style: AppTypography.caption.copyWith(
-                    color: Colors.blue[700],
+                    color: Colors.grey[800],
                     fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(LucideIcons.chevron_right, size: 16, color: Colors.blue[700]),
+          Icon(LucideIcons.chevron_right, size: 16, color: Colors.grey),
         ],
       ),
     );

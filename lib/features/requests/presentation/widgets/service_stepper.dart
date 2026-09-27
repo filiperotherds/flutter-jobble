@@ -94,7 +94,7 @@ class ServiceStepper extends StatelessWidget {
                             ? FontWeight.bold
                             : FontWeight.normal,
                         color: i == current
-                            ? colors.primary
+                            ? const Color(0xFF1C574A)
                             : steps[i].done
                             ? colors.textPrimary
                             : colors.textSecondary,
@@ -130,7 +130,7 @@ class _Track extends StatelessWidget {
       color: !visible
           ? Colors.transparent
           : done
-          ? colors.primary
+          ? const Color(0xFF1C574A)
           : colors.borderLight,
     );
   }
@@ -163,7 +163,7 @@ class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = compact ? 22.0 : 28.0;
-    final border = done || isCurrent ? colors.primary : colors.borderLight;
+    final border = done || isCurrent ? const Color(0xFF1C574A) : colors.borderLight;
 
     return GestureDetector(
       onTap: onTap,
@@ -180,14 +180,14 @@ class _Dot extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: done ? colors.primary : Colors.white,
+            color: done ? const Color(0xFF1C574A) : Colors.white,
             shape: BoxShape.circle,
             border: Border.all(color: border, width: 2),
             // Um halo discreto marca onde o serviço está agora.
             boxShadow: isCurrent
                 ? [
                     BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.18),
+                      color: const Color(0xFF1C574A).withValues(alpha: 0.18),
                       blurRadius: 0,
                       spreadRadius: 3,
                     ),
@@ -206,7 +206,7 @@ class _Dot extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       fontSize: compact ? 11 : 12,
                       fontWeight: FontWeight.bold,
-                      color: isCurrent ? colors.primary : colors.textSecondary,
+                      color: isCurrent ? const Color(0xFF1C574A) : colors.textSecondary,
                     ),
                   ),
           ),
