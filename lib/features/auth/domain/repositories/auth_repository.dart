@@ -3,6 +3,7 @@ import '../../data/models/login_response.dart';
 
 abstract class AuthRepository {
   Future<LoginResponse> login(String email, String password);
+  Future<LoginResponse> loginWithGoogle(String idToken);
   Future<void> signup(String email, String password);
   Future<void> verifyEmail(String email, String code);
   Future<void> resendVerificationCode(String email);

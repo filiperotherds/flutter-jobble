@@ -88,6 +88,16 @@ class ResendVerificationEmailRequested extends AuthEvent {
   List<Object> get props => [email];
 }
 
+/// Login concluído no Google: o `idToken` ainda precisa virar sessão aqui.
+class GoogleSignInSubmitted extends AuthEvent {
+  final String idToken;
+
+  const GoogleSignInSubmitted({required this.idToken});
+
+  @override
+  List<Object?> get props => [idToken];
+}
+
 class UserRequested extends AuthEvent {}
 
 class LogoutRequested extends AuthEvent {}

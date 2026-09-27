@@ -18,18 +18,6 @@ class _ProviderHelpCenterPageState extends State<ProviderHelpCenterPage> {
 
   final List<Map<String, dynamic>> _faqItems = [
     {
-      'category': 'Pagamentos',
-      'question': 'Como funciona o repasse dos pagamentos?',
-      'answer':
-          'Após o cliente confirmar a conclusão satisfatória do serviço, o pagamento em custódia é liberado para a sua carteira digital no Jobble. O repasse para sua conta bancária ocorre em até 2 dias úteis.',
-    },
-    {
-      'category': 'Taxas',
-      'question': 'Qual a taxa cobrada pela plataforma?',
-      'answer':
-          'O Jobble cobra uma taxa administrativa sobre o valor total de cada serviço concluído. Você pode verificar a taxa atualizada diretamente no seu painel financeiro antes de enviar um orçamento.',
-    },
-    {
       'category': 'Orçamentos',
       'question': 'Como faço para enviar orçamentos formais?',
       'answer':
@@ -183,14 +171,6 @@ class _ProviderHelpCenterPageState extends State<ProviderHelpCenterPage> {
           Row(
             children: [
               _buildCategoryChip('Todos', null, LucideIcons.layers),
-              const SizedBox(width: 8),
-              _buildCategoryChip(
-                'Pagamentos',
-                'Pagamentos',
-                LucideIcons.credit_card,
-              ),
-              const SizedBox(width: 8),
-              _buildCategoryChip('Taxas', 'Taxas', LucideIcons.percent),
               const SizedBox(width: 8),
               _buildCategoryChip(
                 'Orçamentos',

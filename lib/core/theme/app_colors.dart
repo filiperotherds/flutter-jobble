@@ -204,10 +204,7 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   }
 
   @override
-  AppColorsTheme lerp(
-    covariant ThemeExtension<AppColorsTheme>? other,
-    double t,
-  ) {
+  AppColorsTheme lerp(covariant ThemeExtension<AppColorsTheme>? other, double t) {
     if (other is! AppColorsTheme) return this;
     Color l(Color a, Color b) => Color.lerp(a, b, t)!;
     return AppColorsTheme(
@@ -247,7 +244,7 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
 
   /// Referência: os tokens de `tokens/colors.css` do Artemian.
   static const light = AppColorsTheme(
-    background: Color(0xFFFFFFFF), // changed from neutral-150 to pure white
+    background: Color(0xFFFFFFFF), // branco — o fundo das telas do app
     surface: Color(0xFFFFFFFF), // neutral-0 — surface-card
     surfaceLight: Color(0xFFF0F0F0), // neutral-100 — surface-subtle
     surfaceStrong: Color(0xFFE1E1E1), // neutral-200

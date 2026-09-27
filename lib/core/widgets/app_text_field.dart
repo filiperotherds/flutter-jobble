@@ -74,7 +74,10 @@ class _AppTextFieldState extends State<AppTextField> {
     if (widget.obscureText) {
       suffix = IconButton(
         onPressed: () => setState(() => _obscured = !_obscured),
-        icon: Icon(_obscured ? LucideIcons.eye_off : LucideIcons.eye, size: 18),
+        icon: Icon(
+          _obscured ? LucideIcons.eye_off : LucideIcons.eye,
+          size: 18,
+        ),
         color: colors.textHint,
         style: const ButtonStyle(
           backgroundColor: WidgetStatePropertyAll(Colors.transparent),

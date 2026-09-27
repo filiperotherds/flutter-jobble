@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
+import 'package:flutter_tcc/features/auth/domain/usecases/google_login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/verify_email_usecase.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_tcc/features/auth/domain/usecases/get_me_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/update_organization_profile_usecase.dart';
 
 import 'package:flutter_tcc/core/services/onboarding_reminders.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/services/token_service.dart';
 
 import 'package:flutter_tcc/features/auth/data/models/user_model.dart';
@@ -18,6 +20,7 @@ import 'package:flutter_tcc/features/auth/domain/entities/user.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
+  final GoogleLoginUseCase googleLoginUseCase;
   final SignupUseCase signupUseCase;
   final VerifyEmailUseCase verifyEmailUseCase;
   final CompleteOnboardingUseCase completeOnboardingUseCase;
@@ -32,6 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({
     required this.loginUseCase,
+    required this.googleLoginUseCase,
     required this.signupUseCase,
     required this.verifyEmailUseCase,
     required this.completeOnboardingUseCase,
@@ -42,6 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     this.reminders,
   }) : super(AuthInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
+    on<GoogleSignInSubmitted>(_onGoogleSignInSubmitted);
     on<SignupSubmitted>(_onSignupSubmitted);
     on<EmailVerificationSubmitted>(_onEmailVerificationSubmitted);
     on<CompleteOnboardingSubmitted>(_onCompleteOnboardingSubmitted);
@@ -106,6 +111,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final result = await loginUseCase.execute(event.email, event.password);
+      await tokenService.saveToken(result.accessToken);
+
+      final user = await getMeUseCase.execute();
+      emit(AuthSuccess(accessToken: result.accessToken, user: user));
+      unawaited(_syncReminders());
+    } catch (e) {
+      final message = e.toString().replaceAll('Exception: ', '');
+      emit(AuthFailure(message: message));
+    }
+  }
+
+  /// Mesma chegada do login por senha: guarda o token e carrega o usuário.
+  Future<void> _onGoogleSignInSubmitted(
+    GoogleSignInSubmitted event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await googleLoginUseCase.execute(event.idToken);
       await tokenService.saveToken(result.accessToken);
 
       final user = await getMeUseCase.execute();
@@ -209,6 +233,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthSuccess(accessToken: token, user: user));
         unawaited(_syncReminders());
       } catch (e) {
+        // Só o servidor recusando o token encerra a sessão. Sem rede, ou com
+        // o servidor fora do ar, a sessão segue de pé — derrubá-la fazia o
+        // profissional ser deslogado a cada reinício do backend.
+        if (e is ApiException && e.statusCode != 401) {
+          emit(AuthSuccess(accessToken: token, user: null));
+          return;
+        }
         await tokenService.deleteToken();
         emit(AuthInitial());
       }
