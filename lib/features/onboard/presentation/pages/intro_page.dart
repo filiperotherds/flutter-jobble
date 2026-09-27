@@ -1,3 +1,4 @@
+import 'package:flutter_tcc/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tcc/core/constants/app_assets.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -56,16 +57,6 @@ class IntroPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Image.asset(
-                        AppAssets.logoDark,
-                        height: 28,
-                        color: ink.textPrimary,
-                        colorBlendMode: BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Receba chamados da sua região e feche cada serviço '
                       'com contrato assinado.',
@@ -73,20 +64,22 @@ class IntroPage extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     AppPrimaryButton(
-                      label: 'Já tenho uma conta',
+                      label: 'Criar conta',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SignupPage()),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppSecondaryButton(
+                      label: 'Já tenho conta',
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginPage()),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    AppSecondaryButton(
-                      label: 'Criar nova conta',
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SignupPage()),
-                      ),
-                    ),
+                    const Center(child: GoogleSignInButton()),
                   ],
                 ),
               ),

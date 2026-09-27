@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tcc/core/widgets/app_buttons.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:flutter_tcc/core/config/app_config.dart';
@@ -71,23 +73,11 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     }
 
     final colors = context.colors;
-    return OutlinedButton.icon(
+    return AppSecondaryButton(
       onPressed: _busy ? null : _startNativeFlow,
       icon: SvgPicture.asset(AppAssets.googleIcon, width: 20, height: 20),
-      label: Text(
-        _busy ? 'Entrando…' : 'Entrar com o Google',
-        style: AppTypography.body.copyWith(
-          fontWeight: FontWeight.bold,
-          color: colors.textPrimary,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        side: BorderSide(color: colors.borderLight),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.sm),
-        ),
-      ),
+      label: 'Entrar com o Google',
+      isLoading: _busy,
     );
   }
 }

@@ -23,9 +23,7 @@ class AppConfig {
   /// Vem de `--dart-define=GOOGLE_CLIENT_ID=...`. Sem ele o botão "Entrar com
   /// o Google" fica escondido: o Google recusa qualquer tentativa de login de
   /// uma origem que não esteja registrada nesse Client ID.
-  static const String googleClientId = String.fromEnvironment(
-    'GOOGLE_CLIENT_ID',
-  );
+  static const String googleClientId = 'dummy_id_for_ui';
 
   /// Se dá para oferecer o login com o Google nesta build.
   static bool get isGoogleSignInEnabled => googleClientId.isNotEmpty;
