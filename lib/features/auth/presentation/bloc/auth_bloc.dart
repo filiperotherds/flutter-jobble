@@ -44,7 +44,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.updateOrganizationProfileUseCase,
     required this.tokenService,
     this.reminders,
-  }) : super(AuthInitial()) {
+    // Abre restaurando, não deslogado: a porta de sessão espera a conferência
+    // do token em vez de piscar a tela de entrada para quem já entrou.
+  }) : super(AuthRestoring()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<GoogleSignInSubmitted>(_onGoogleSignInSubmitted);
     on<SignupSubmitted>(_onSignupSubmitted);
@@ -224,6 +226,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (currentState is AuthSuccess) {
       token = currentState.accessToken;
     } else {
+      emit(AuthRestoring());
       token = await tokenService.getToken();
     }
 

@@ -11,6 +11,7 @@ import 'package:flutter_tcc/core/widgets/app_text_field.dart';
 import 'package:flutter_tcc/core/network/dio_client.dart';
 import 'package:flutter_tcc/injection_container.dart';
 import 'package:flutter_tcc/features/bids/data/datasources/bid_remote_data_source.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 /// Devolutiva de um chamado já aceito.
 ///
@@ -224,15 +225,8 @@ class _ResponsePageState extends State<ResponsePage> {
 
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: AppSize.iconButton + AppSpacing.md + AppSpacing.xs,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md),
-          child: AppCircleIconButton(
-            icon: LucideIcons.arrow_left,
-            tooltip: 'Voltar',
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: const Text('Devolutiva'),
       ),
       body: SingleChildScrollView(

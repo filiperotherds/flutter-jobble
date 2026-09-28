@@ -10,6 +10,12 @@ abstract class AuthState extends Equatable {
 
 class AuthInitial extends AuthState {}
 
+/// Sessão sendo restaurada na abertura do app.
+///
+/// Separada de [AuthInitial] porque a porta de sessão precisa distinguir "ainda
+/// não sei" de "não tem sessão": sem isso a tela de entrada pisca antes do app.
+class AuthRestoring extends AuthState {}
+
 class AuthLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {

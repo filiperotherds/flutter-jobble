@@ -44,6 +44,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   /// claro. Para ícones, marcadores e números positivos.
   final Color accentText;
 
+  /// Padrão único das ações preenchidas, nos dois temas.
+  Color get action => const Color(0xFF0D2F28);
+  Color get onAction => const Color(0xFFFFFFFF);
+
   // CTA principal
   final Color inverse;
   final Color onInverse;
@@ -265,7 +269,7 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     onDisabled: Color(0xFFA8A8A8),
     overlay: Color(0x80071A16), // forest-900 a 50%
     focus: Color(0xFF1C574A), // forest-600 — focus-ring
-    shadow: Color(0xFF0D2F28),
+    shadow: Color(0xFF000000),
     link: Color(0xFF1C574A), // forest-600
     error: Color(0xFFD93B36), // red-600
     success: Color(0xFF54962C), // green-700

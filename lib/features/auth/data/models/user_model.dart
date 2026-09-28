@@ -20,7 +20,7 @@ class UserModel extends User {
         avatarUrl: org['avatarUrl'] as String?,
         tags: org['tags'] as String?,
         bio: org['bio'] as String?,
-        rating: (org['rating'] as num?)?.toDouble() ?? 5.0,
+        rating: (org['rating'] as num?)?.toDouble() ?? 0,
         projectsCount: org['projectsCount'] as int? ?? 0,
         matchesCount: org['matchesCount'] as int? ?? 0,
       );

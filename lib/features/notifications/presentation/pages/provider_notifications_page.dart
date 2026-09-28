@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:intl/intl.dart';
+
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_tcc/features/reviews/data/review_models.dart';
-import 'package:flutter_tcc/features/reviews/data/reviews_api.dart';
-import 'package:flutter_tcc/features/reviews/presentation/pages/provider_reviews_page.dart';
+import 'package:flutter_tcc/core/widgets/app_empty_state.dart';
+import 'package:flutter_tcc/core/widgets/app_loader.dart';
+import 'package:flutter_tcc/features/bids/presentation/pages/match_details_page.dart';
+import 'package:flutter_tcc/features/contracts/presentation/pages/contract_detail_page.dart';
+import 'package:flutter_tcc/features/notifications/data/datasources/notification_remote_data_source.dart';
+import 'package:flutter_tcc/features/notifications/data/models/notification_model.dart';
 import 'package:flutter_tcc/injection_container.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
-/// As notificações do profissional.
-///
-/// As avaliações recebidas entram no topo, vindas do servidor: é onde a
-/// pessoa vai olhar quando o sino acender, e daqui ela chega direto ao lugar
-/// de responder. Os demais avisos da tela ainda são locais.
 class ProviderNotificationsPage extends StatefulWidget {
   const ProviderNotificationsPage({super.key});
 
@@ -23,233 +24,253 @@ class ProviderNotificationsPage extends StatefulWidget {
 }
 
 class _ProviderNotificationsPageState extends State<ProviderNotificationsPage> {
-  List<Review> _reviews = const [];
+  final _dataSource = sl<NotificationRemoteDataSource>();
+
+  List<NotificationModel> _items = const [];
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadReviews();
+    _load();
   }
 
-  Future<void> _loadReviews() async {
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final page = await sl<ReviewsApi>().received();
+      final items = await _dataSource.fetchAll();
       if (!mounted) return;
-      // Só as recentes viram aviso: notificação é sobre o que acabou de
-      // acontecer, não o histórico inteiro.
       setState(() {
-        _reviews = page.items
-            .where(
-              (review) =>
-                  review.unread ||
-                  DateTime.now().difference(review.createdAt).inDays <= 7,
-            )
-            .toList();
+        _items = items;
+        _loading = false;
       });
-    } catch (_) {
-      // Sem servidor, a tela segue com os avisos locais.
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.message;
+        _loading = false;
+      });
     }
   }
 
-  Future<void> _openReviews() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const ProviderReviewsPage(onlyUnanswered: true),
-      ),
-    );
-    if (mounted) _loadReviews();
+  Future<void> _markAllRead() async {
+    final unread = _items.where((n) => n.isUnread).map((n) => n.id).toList();
+    if (unread.isEmpty) return;
+    try {
+      await _dataSource.markMultipleAsRead(unread);
+      await _load();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _open(NotificationModel notification) async {
+    if (notification.isUnread) {
+      // Abrir já marca como lida; falhar aqui não pode impedir a navegação.
+      try {
+        await _dataSource.markAsRead(notification.id);
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    final contractId = notification.contractId;
+    final requestId = notification.serviceRequestId;
+    final page = contractId != null
+        ? ContractDetailPage(contractId: contractId)
+        : requestId != null
+        ? MatchDetailsPage(serviceRequestId: requestId)
+        : null;
+    if (page != null) {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    }
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final hasUnread = _items.any((n) => n.isUnread);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.background,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrow_left, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: Text(
           'Notificações',
           style: AppTypography.h3.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Limpar',
-              style: AppTypography.caption.copyWith(
-                color: colors.primary,
-                fontWeight: FontWeight.bold,
+          if (hasUnread)
+            TextButton(
+              onPressed: _markAllRead,
+              child: Text(
+                'Marcar como lidas',
+                style: AppTypography.caption.copyWith(
+                  color: colors.accentText,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        children: [
-          if (_reviews.isNotEmpty) ...[
-            _buildDateHeader('Avaliações'),
-            for (final review in _reviews)
-              _buildNotificationItem(
-                icon: Icons.star_rounded,
-                iconColor: Colors.orange,
-                iconBg: Colors.orange[50]!,
-                title: review.answered
-                    ? 'Avaliação de ${review.author.display}'
-                    : 'Nova avaliação de ${review.author.display}',
-                message: review.answered
-                    ? '${review.rating} estrelas · você já respondeu.'
-                    : '${review.rating} estrelas · "${review.comment}" '
-                          'Toque para responder.',
-                time: DateFormat('HH:mm').format(review.createdAt),
-                isUnread: review.unread,
-                colors: colors,
-                onTap: _openReviews,
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: _loading
+            ? const AppLoaderCentered()
+            : _error != null
+            ? AppEmptyState(
+                icon: LucideIcons.triangle_alert,
+                title: 'Não foi possível carregar',
+                description: _error,
+                actionLabel: 'Tentar de novo',
+                onAction: _load,
+              )
+            : _items.isEmpty
+            ? const AppEmptyState(
+                icon: LucideIcons.bell,
+                title: 'Nenhuma notificação',
+                description:
+                    'Avisos de novos chamados e de contratos aparecem aqui.',
+              )
+            : ListView(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                children: _grouped(colors),
               ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          _buildDateHeader('Hoje'),
-          _buildNotificationItem(
-            icon: LucideIcons.file_text,
-            iconColor: Colors.green,
-            iconBg: Colors.green[50]!,
-            title: 'Orçamento Aprovado',
-            message:
-                'O cliente Gabriel aprovou seu orçamento para Pintura Residencial.',
-            time: '14:35',
-            isUnread: true,
-            colors: colors,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _buildDateHeader('Ontem'),
-          _buildNotificationItem(
-            icon: LucideIcons.map_pin,
-            iconColor: Colors.orange,
-            iconBg: Colors.orange[50]!,
-            title: 'Nova Solicitação Próxima',
-            message:
-                'Um cliente próximo a você está buscando por Reparo de Infiltração.',
-            time: '18:00',
-            isUnread: false,
-            colors: colors,
-          ),
-          _buildNotificationItem(
-            icon: LucideIcons.circle_check,
-            iconColor: Colors.grey[700]!,
-            iconBg: Colors.grey[100]!,
-            title: 'Perfil Verificado',
-            message:
-                'Seus documentos foram validados e seu perfil está 100% ativo.',
-            time: '09:00',
-            isUnread: false,
-            colors: colors,
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDateHeader(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      child: Text(
-        text,
-        style: AppTypography.caption.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
+  List<Widget> _grouped(AppColorsTheme colors) {
+    final widgets = <Widget>[];
+    String? lastHeader;
+    for (final item in _items) {
+      final header = _dayLabel(item.createdAt);
+      if (header != lastHeader) {
+        lastHeader = header;
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: Text(
+              header,
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+        );
+      }
+      widgets.add(_item(item, colors));
+    }
+    return widgets;
+  }
+
+  Widget _item(NotificationModel notification, AppColorsTheme colors) {
+    final visual = _visualFor(notification.type, colors);
+    return InkWell(
+      onTap: () => _open(notification),
+      child: Container(
+        color: notification.isUnread
+            ? colors.primary.withValues(alpha: 0.05)
+            : Colors.transparent,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: visual.$2.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(visual.$1, color: visual.$2, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          notification.title,
+                          style: AppTypography.body.copyWith(
+                            fontWeight: notification.isUnread
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        DateFormat.Hm('pt_BR').format(notification.createdAt),
+                        style: AppTypography.caption.copyWith(
+                          color: notification.isUnread
+                              ? colors.accentText
+                              : colors.textSecondary,
+                          fontWeight: notification.isUnread
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    notification.personName,
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildNotificationItem({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
-    required String title,
-    required String message,
-    required String time,
-    required bool isUnread,
-    required AppColorsTheme colors,
-    VoidCallback? onTap,
-  }) {
-    final item = Container(
-      color: isUnread
-          ? colors.primary.withValues(alpha: 0.05)
-          : Colors.transparent,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: isUnread
-                            ? FontWeight.bold
-                            : FontWeight.w600,
-                        color: isUnread ? Colors.black : Colors.grey[800],
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: AppTypography.caption.copyWith(
-                        color: isUnread ? colors.primary : Colors.grey[500],
-                        fontWeight: isUnread
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return item;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(onTap: onTap, child: item),
-    );
+  (IconData, Color) _visualFor(String type, AppColorsTheme colors) {
+    if (type.startsWith('CONTRACT')) {
+      return (LucideIcons.file_text, colors.accentText);
+    }
+    return switch (type) {
+      'MATCH' => (LucideIcons.map_pin, context.colors.accentText),
+      'PROPOSAL_APPROVED' ||
+      'HIRED' => (LucideIcons.circle_check, context.colors.success),
+      _ => (LucideIcons.bell, colors.textSecondary),
+    };
   }
+}
+
+String _dayLabel(DateTime moment) {
+  final today = DateUtils.dateOnly(DateTime.now());
+  final day = DateUtils.dateOnly(moment);
+  final diff = today.difference(day).inDays;
+  if (diff == 0) return 'Hoje';
+  if (diff == 1) return 'Ontem';
+  return DateFormat("d 'de' MMMM", 'pt_BR').format(moment);
 }

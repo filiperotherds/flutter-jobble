@@ -11,7 +11,6 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/auth_error_card.dart';
-import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
 
 /// Cadastro do profissional em uma etapa: e-mail e senha.
 ///
@@ -65,12 +64,9 @@ class _SignupPageState extends State<SignupPage> {
               password: _passwordController.text,
             ),
           );
-        } else if (state is AuthSuccess) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const AccountGatePage()),
-            (route) => false,
-          );
         }
+        // O login que vem em seguida é visto pela porta de sessão, que abre o
+        // app e limpa a pilha do cadastro.
       },
       builder: (context, state) {
         final isLoading =

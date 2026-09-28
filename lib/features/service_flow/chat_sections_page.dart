@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'flow_api.dart';
 import 'conversation_page.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class ChatSectionsPage extends StatefulWidget {
   const ChatSectionsPage({super.key, this.provider = false});
@@ -74,6 +75,8 @@ class _ChatSectionsPageState extends State<ChatSectionsPage>
         .toList();
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: const Text('Chats'),
         automaticallyImplyLeading: Navigator.canPop(context),
       ),

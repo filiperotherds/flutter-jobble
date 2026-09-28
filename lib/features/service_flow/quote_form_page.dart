@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'flow_api.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 const paymentLabels = {
   'PIX': 'Pix',
@@ -154,7 +155,11 @@ class _QuoteFormPageState extends State<QuoteFormPage> {
   );
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Enviar orçamento')),
+    appBar: AppBar(
+      leadingWidth: AppBackButton.slotWidth,
+      leading: const AppBackButton(),
+      title: const Text('Enviar orçamento'),
+    ),
     body: Form(
       key: _form,
       child: ListView(

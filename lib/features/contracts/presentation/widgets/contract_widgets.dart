@@ -11,7 +11,7 @@ Color contractStatusColor(AppColorsTheme colors, ContractStatus status) {
   return switch (status) {
     ContractStatus.draft || ContractStatus.changesRequested => colors.warning,
     ContractStatus.pendingSignatures ||
-    ContractStatus.awaitingConfirmation => colors.info,
+    ContractStatus.awaitingConfirmation => colors.textSecondary,
     ContractStatus.signed || ContractStatus.completed => colors.success,
     ContractStatus.canceled || ContractStatus.terminated => colors.textHint,
   };
@@ -163,7 +163,6 @@ class _ReasonDialogState extends State<_ReasonDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
 
     return AlertDialog(
       title: Text(widget.title),
@@ -195,7 +194,9 @@ class _ReasonDialogState extends State<_ReasonDialog> {
         ),
         TextButton(
           onPressed: _confirm,
-          style: TextButton.styleFrom(foregroundColor: colors.error),
+          style: TextButton.styleFrom(
+            foregroundColor: context.colors.textPrimary,
+          ),
           child: Text(widget.confirmLabel),
         ),
       ],

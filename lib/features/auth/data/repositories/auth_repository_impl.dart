@@ -6,6 +6,7 @@ import 'package:flutter_tcc/features/auth/data/models/signup_request.dart';
 import 'package:flutter_tcc/features/auth/data/models/login_response.dart';
 import 'package:flutter_tcc/features/auth/data/models/user_model.dart';
 
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/features/auth/data/datasources/auth_local_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -70,7 +71,9 @@ class AuthRepositoryImpl implements AuthRepository {
       await _cacheQuietly(userModel);
       return userModel;
     } catch (e) {
-      // Em caso de falha de conexão ou erro, tenta buscar do cache
+      // Uma sessão recusada pelo servidor não pode ser restaurada do cache.
+      // Sem resposta do servidor, o cache continua permitindo acesso offline.
+      if (e is ApiException && e.statusCode != null) rethrow;
       final cachedUser = await _readCacheQuietly();
       if (cachedUser != null) {
         return cachedUser;

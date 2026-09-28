@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/widgets/app_empty_state.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class CertificatesPage extends StatelessWidget {
   const CertificatesPage({super.key});
@@ -16,7 +17,11 @@ class CertificatesPage extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Certificados')),
+      appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: const Text('Certificados'),
+      ),
       body: empty,
     );
   }

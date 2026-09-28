@@ -8,8 +8,8 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/signup_step_profile.dart';
-import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
 import 'package:flutter_tcc/features/legal/data/models/legal_models.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({super.key});
@@ -57,10 +57,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthOnboardingSuccess) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const AccountGatePage()),
-            (route) => false,
-          );
+          // Volta para o onboarding guiado, que recarrega o que ainda falta ao
+          // retomar. Empilhar a porta de sessão de novo duplicaria a conferência.
+          Navigator.of(context).pop();
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -71,7 +70,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Completar perfil')),
+        appBar: AppBar(
+          leadingWidth: AppBackButton.slotWidth,
+          leading: const AppBackButton(),
+          title: const Text('Completar perfil'),
+        ),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(

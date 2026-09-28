@@ -10,7 +10,6 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
-import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/core/widgets/app_list_row.dart';
 import 'package:flutter_tcc/core/widgets/app_loader.dart';
 import 'package:flutter_tcc/core/widgets/profile_avatar.dart';
@@ -18,6 +17,7 @@ import 'package:flutter_tcc/injection_container.dart' as di;
 import 'package:flutter_tcc/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/edit_field_page.dart';
 import 'package:flutter_tcc/features/legal/presentation/pages/legal_profile_page.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -102,15 +102,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: AppSize.iconButton + AppSpacing.md + AppSpacing.xs,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md),
-          child: AppCircleIconButton(
-            icon: LucideIcons.arrow_left,
-            tooltip: 'Voltar',
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: const Text('Editar perfil'),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(

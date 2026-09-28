@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_tcc/features/contracts/presentation/pages/contract_detail_page.dart';
 import 'flow_api.dart';
 import 'quote_form_page.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class ConversationPage extends StatefulWidget {
   const ConversationPage({
@@ -251,7 +252,11 @@ class _ConversationPageState extends State<ConversationPage> {
     final data = _data, closed = data?['closed'] == true;
     final request = data == null ? null : object(data['request']);
     return Scaffold(
-      appBar: AppBar(title: Text('${data?['name'] ?? 'Conversa'}')),
+      appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: Text('${data?['name'] ?? 'Conversa'}'),
+      ),
       body: data == null
           ? Center(
               child: _error == null

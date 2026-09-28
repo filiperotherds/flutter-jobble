@@ -128,6 +128,8 @@ Future<void> init() async {
     () => NotificationRemoteDataSource(dioClient: sl()),
   );
 
+  // Sessões da conta e troca de senha
+
   // Bids
   sl.registerLazySingleton<BidRemoteDataSource>(
     () => BidRemoteDataSource(dioClient: sl()),

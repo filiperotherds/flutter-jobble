@@ -9,18 +9,13 @@ import '../home/provider_shell_test.dart' show TestAuthBloc;
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_services_catalog_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_profile_tab.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_portfolio_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_registration_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_help_center_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_edit_profile_page.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/provider_signup_wizard_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_performance_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/provider_settings_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_agenda_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_messages_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/provider_shell_page.dart';
-import 'package:flutter_tcc/features/requests/presentation/pages/provider_job_tracker_page.dart';
-import 'package:flutter_tcc/features/requests/presentation/pages/provider_quote_generator_page.dart';
-import 'package:flutter_tcc/features/requests/presentation/pages/provider_request_detail_page.dart';
 import 'package:flutter_tcc/features/notifications/presentation/pages/provider_notifications_page.dart';
 
 void main() {
@@ -34,28 +29,16 @@ void main() {
     }
   });
   final screens = <String, Widget Function()>{
-    'ProviderQuotePreviewPage': () => const ProviderQuotePreviewPage(
-      items: [
-        {'desc': 'Pintura', 'qtd': 1, 'unit': 150.0},
-      ],
-      total: 150,
-      isReadOnly: true,
-    ),
     'ProviderServicesCatalogPage': () => const ProviderServicesCatalogPage(),
     'ProviderProfileTab': () => const ProviderProfileTab(),
     'ProviderPortfolioPage': () => const ProviderPortfolioPage(),
-    'ProviderRegistrationPage': () => const ProviderRegistrationPage(),
     'ProviderHelpCenterPage': () => const ProviderHelpCenterPage(),
     'ProviderEditProfilePage': () => const ProviderEditProfilePage(),
-    'ProviderSignupWizardPage': () => const ProviderSignupWizardPage(),
     'ProviderPerformancePage': () => const ProviderPerformancePage(),
     'ProviderSettingsPage': () => const ProviderSettingsPage(),
     'ProviderAgendaPage': () => const ProviderAgendaPage(),
     'ProviderMessagesPage': () => const ProviderMessagesPage(),
     'ProviderShellPage': () => const ProviderShellPage(),
-    'ProviderJobTrackerPage': () => const ProviderJobTrackerPage(),
-    'ProviderQuoteGeneratorPage': () => const ProviderQuoteGeneratorPage(),
-    'ProviderRequestDetailPage': () => const ProviderRequestDetailPage(),
     'ProviderNotificationsPage': () => const ProviderNotificationsPage(),
   };
   for (final entry in screens.entries) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'flow_api.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 const weekdays = [
   'Domingo',
@@ -131,7 +132,11 @@ class _ProviderAttendancePageState extends State<ProviderAttendancePage> {
   Widget build(BuildContext context) {
     final hours = _hours;
     return Scaffold(
-      appBar: AppBar(title: const Text('Horários de atendimento')),
+      appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: const Text('Horários de atendimento'),
+      ),
       body: hours == null
           ? Center(
               child: _error == null
@@ -355,7 +360,11 @@ class _ProviderCatalogPageState extends State<ProviderCatalogPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Catálogo de serviços')),
+    appBar: AppBar(
+      leadingWidth: AppBackButton.slotWidth,
+      leading: const AppBackButton(),
+      title: const Text('Catálogo de serviços'),
+    ),
     floatingActionButton: FloatingActionButton.extended(
       onPressed: _templates.isEmpty ? null : () => _edit(),
       icon: const Icon(LucideIcons.plus),
@@ -471,6 +480,8 @@ class _ServiceEditorState extends State<_ServiceEditor> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
+      leadingWidth: AppBackButton.slotWidth,
+      leading: const AppBackButton(),
       title: Text(widget.service == null ? 'Novo serviço' : 'Editar serviço'),
     ),
     body: Form(

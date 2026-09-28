@@ -5,6 +5,7 @@ import 'package:flutter_tcc/features/onboarding/presentation/widgets/onboarding_
 import 'flow_api.dart';
 import 'chat_sections_page.dart';
 import 'provider_setup_page.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class ProviderFlowHome extends StatefulWidget {
   const ProviderFlowHome({super.key});
@@ -54,7 +55,11 @@ class _ProviderFlowHomeState extends State<ProviderFlowHome> {
   Widget build(BuildContext context) {
     final s = _settings, r = s == null ? null : object(s['response']);
     return Scaffold(
-      appBar: AppBar(title: const Text('Seu trabalho na Jobble')),
+      appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: const Text('Seu trabalho na Jobble'),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(

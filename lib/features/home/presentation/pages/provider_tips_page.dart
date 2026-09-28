@@ -42,9 +42,9 @@ class ProviderTipsPage extends StatelessWidget {
               child: Column(
                 children: [
                   Transform.scale(
-                    scale: 1.45,
+                    scale: 1.15,
                     child: SizedBox(
-                      height: 190,
+                      height: 220,
                       child: Image.asset(
                         'assets/images/joberto_tips_header.png',
                         fit: BoxFit.contain,

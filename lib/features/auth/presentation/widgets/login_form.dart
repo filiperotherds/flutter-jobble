@@ -1,10 +1,7 @@
-import 'dart:async';
-
+import 'package:flutter_tcc/core/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:flutter_tcc/core/config/app_config.dart';
-import 'package:flutter_tcc/core/services/google_auth_service.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
@@ -16,7 +13,6 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/pages/signup_page.dart';
-import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -29,24 +25,8 @@ class _LoginFormState extends State<LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  StreamSubscription<String>? _googleSignIn;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!AppConfig.isGoogleSignInEnabled) return;
-
-    // O Google avisa por um stream: na web o login acontece dentro do botão
-    // dele, sem um retorno que dê para aguardar aqui.
-    _googleSignIn = GoogleAuthService.instance.idTokens.listen((idToken) {
-      if (!mounted) return;
-      context.read<AuthBloc>().add(GoogleSignInSubmitted(idToken: idToken));
-    });
-  }
-
   @override
   void dispose() {
-    _googleSignIn?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -72,19 +52,9 @@ class _LoginFormState extends State<LoginForm> {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return BlocConsumer<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is! AuthSuccess) return;
-
-        if (!mounted) return;
-
-        // Entrar não depende do cadastro completo: quem ainda não montou o
-        // perfil profissional cai no app com o onboarding guiado por cima.
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AccountGatePage()),
-          (route) => false,
-        );
-      },
+    // Entrar não troca a tela daqui: a porta de sessão no topo da árvore vê o
+    // login e abre o app, com o onboarding guiado por cima se faltar cadastro.
+    return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 

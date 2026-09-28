@@ -92,16 +92,46 @@ class _SignContractPageState extends State<SignContractPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CheckboxListTile(
-                        value: _agreed,
-                        onChanged: (value) =>
-                            setState(() => _agreed = value ?? false),
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        title: Text(
-                          'Li e concordo com todos os termos deste contrato.',
-                          style: AppTypography.body.copyWith(
-                            color: colors.textPrimary,
+                      MergeSemantics(
+                        child: Semantics(
+                          checked: _agreed,
+                          child: ListTile(
+                            onTap: () => setState(() => _agreed = !_agreed),
+                            contentPadding: EdgeInsets.zero,
+                            leading: SizedBox(
+                              width: 40,
+                              height: 48,
+                              child: Center(
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: _agreed
+                                        ? colors.action
+                                        : colors.surface,
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      color: _agreed
+                                          ? colors.action
+                                          : colors.borderStrong,
+                                    ),
+                                  ),
+                                  child: _agreed
+                                      ? Icon(
+                                          Icons.check_rounded,
+                                          size: 14,
+                                          color: colors.onAction,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              'Li e concordo com todos os termos deste contrato.',
+                              style: AppTypography.body.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
                           ),
                         ),
                       ),

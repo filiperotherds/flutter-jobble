@@ -6,7 +6,9 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "toolArgs": ["--dart-define-from-file=.env"]
+      "toolArgs": [
+        "--dart-define-from-file=.env"
+      ]
     },
     {
       "name": "Jobble (Railway)",
@@ -22,14 +24,19 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "toolArgs": ["--dart-define=API_BASE_URL=http://localhost:3333"]
+      "toolArgs": [
+        "--dart-define-from-file=config/local.json"
+      ]
     },
     {
       "name": "Jobble (backend local — emulador Android)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "toolArgs": ["--dart-define=API_BASE_URL=http://10.0.2.2:3333"]
+      "toolArgs": [
+        "--dart-define=API_BASE_URL=http://10.0.2.2:3334",
+        "--dart-define=ENABLE_HTTP_LOGS=false"
+      ]
     },
     {
       "name": "Jobble (.env, release)",
@@ -37,7 +44,9 @@
       "type": "dart",
       "program": "lib/main.dart",
       "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=.env"]
+      "toolArgs": [
+        "--dart-define-from-file=.env"
+      ]
     }
   ]
 }

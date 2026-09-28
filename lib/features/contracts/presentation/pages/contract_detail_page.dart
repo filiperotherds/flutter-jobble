@@ -144,19 +144,21 @@ class _ContractBody extends StatelessWidget {
           _ChangeRequestCard(request: contract.changeRequest!),
         ],
         if (showReadiness) ...[
-          const SizedBox(height: AppSpacing.md),
-          ReadinessCard(
-            title: 'Seu cadastro',
-            readiness: contract.myReadiness,
-            onFix: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const VerificationCenterPage(),
-                ),
-              );
-              cubit.load(silent: true);
-            },
-          ),
+          if (!contract.myReadiness.ready) ...[
+            const SizedBox(height: AppSpacing.md),
+            ReadinessCard(
+              title: 'Seu cadastro',
+              readiness: contract.myReadiness,
+              onFix: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const VerificationCenterPage(),
+                  ),
+                );
+                cubit.load(silent: true);
+              },
+            ),
+          ],
           if (!contract.otherReadiness.ready) ...[
             const SizedBox(height: AppSpacing.md),
             ReadinessCard(
@@ -527,7 +529,6 @@ class _DangerZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final cubit = context.read<ContractDetailCubit>();
 
     return Column(
@@ -535,7 +536,9 @@ class _DangerZone extends StatelessWidget {
       children: [
         if (contract.can(ContractAction.cancel))
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: colors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.textPrimary,
+            ),
             onPressed: () async {
               final reason = await showReasonDialog(
                 context,
@@ -551,7 +554,9 @@ class _DangerZone extends StatelessWidget {
           ),
         if (contract.can(ContractAction.terminate))
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: colors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.textPrimary,
+            ),
             onPressed: () async {
               final reason = await showReasonDialog(
                 context,

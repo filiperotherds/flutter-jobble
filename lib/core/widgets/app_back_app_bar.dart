@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
-import 'package:flutter_tcc/core/widgets/app_buttons.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 /// AppBar das telas empilhadas: chip de voltar, título e, opcionalmente, o
 /// descritor em itálico que o sistema põe sob todo título de tela.
@@ -33,18 +32,9 @@ class AppBackAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       toolbarHeight: preferredSize.height,
-      leadingWidth: AppSize.iconButton + AppSpacing.screenH,
+      leadingWidth: AppBackButton.slotWidth,
       titleSpacing: AppSpacing.sm,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.screenH),
-        child: Center(
-          child: AppCircleIconButton(
-            icon: LucideIcons.arrow_left,
-            tooltip: 'Voltar',
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-      ),
+      leading: const AppBackButton(),
       title: subtitle == null
           ? Text(title)
           : Column(

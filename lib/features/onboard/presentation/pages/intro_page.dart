@@ -1,9 +1,8 @@
+import 'package:flutter_tcc/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tcc/core/constants/app_assets.dart';
-import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_theme.dart';
-import 'package:flutter_tcc/core/theme/app_typography.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/features/auth/presentation/pages/login_page.dart';
 import 'package:flutter_tcc/features/auth/presentation/pages/signup_page.dart';
@@ -22,8 +21,6 @@ class IntroPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const ink = AppColorsTheme.light;
-
     return Theme(
       data: AppTheme.light,
       child: Scaffold(
@@ -56,37 +53,23 @@ class IntroPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Image.asset(
-                        AppAssets.logoDark,
-                        height: 28,
-                        color: ink.textPrimary,
-                        colorBlendMode: BlendMode.srcIn,
+                    AppPrimaryButton(
+                      label: 'Criar conta',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SignupPage()),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Receba chamados da sua região e feche cada serviço '
-                      'com contrato assinado.',
-                      style: AppTypography.body.copyWith(color: ink.textBody),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    AppPrimaryButton(
-                      label: 'Já tenho uma conta',
+                    AppSecondaryButton(
+                      label: 'Já tenho conta',
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginPage()),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    AppSecondaryButton(
-                      label: 'Criar nova conta',
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SignupPage()),
-                      ),
-                    ),
+                    const Center(child: GoogleSignInButton()),
                   ],
                 ),
               ),

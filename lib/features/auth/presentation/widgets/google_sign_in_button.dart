@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tcc/core/widgets/app_buttons.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:flutter_tcc/core/config/app_config.dart';
 import 'package:flutter_tcc/core/constants/app_assets.dart';
 import 'package:flutter_tcc/core/services/google_auth_service.dart';
-import 'package:flutter_tcc/core/theme/app_colors.dart';
-import 'package:flutter_tcc/core/theme/app_spacing.dart';
-import 'package:flutter_tcc/core/theme/app_typography.dart';
 
 import 'google_button_native.dart'
     if (dart.library.js_interop) 'google_button_web.dart';
@@ -70,24 +69,11 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
       return SizedBox(height: 44, child: officialButton);
     }
 
-    final colors = context.colors;
-    return OutlinedButton.icon(
+    return AppSecondaryButton(
       onPressed: _busy ? null : _startNativeFlow,
       icon: SvgPicture.asset(AppAssets.googleIcon, width: 20, height: 20),
-      label: Text(
-        _busy ? 'Entrando…' : 'Entrar com o Google',
-        style: AppTypography.body.copyWith(
-          fontWeight: FontWeight.bold,
-          color: colors.textPrimary,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        side: BorderSide(color: colors.borderLight),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.sm),
-        ),
-      ),
+      label: 'Entrar com o Google',
+      isLoading: _busy,
     );
   }
 }

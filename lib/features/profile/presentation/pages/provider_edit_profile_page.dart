@@ -1,13 +1,97 @@
+import 'package:flutter_tcc/core/widgets/app_buttons.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_tcc/core/network/api_exception.dart';
-import 'package:flutter_tcc/features/profile/data/account_api.dart';
-import 'package:flutter_tcc/features/profile/presentation/pages/profile_cover_page.dart';
-import 'package:flutter_tcc/features/quotes/data/quotes_api.dart';
+import 'package:flutter_tcc/core/widgets/app_empty_state.dart';
+import 'package:flutter_tcc/core/widgets/app_loader.dart';
+import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
+import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
+import 'package:flutter_tcc/features/legal/data/datasources/legal_remote_data_source.dart';
+import 'package:flutter_tcc/features/legal/data/models/legal_models.dart';
+import 'package:flutter_tcc/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:flutter_tcc/features/service_flow/flow_api.dart';
+import 'package:flutter_tcc/injection_container.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
+
+const _dayNames = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado',
+];
+
+/// Um dia do horário de atendimento, na forma que a tela edita.
+///
+/// O servidor aceita várias janelas por dia; aqui a pessoa edita uma só, então
+/// janelas extras vindas do servidor são preservadas apenas se o dia não for
+/// tocado — o que é feito guardando o original até o salvamento.
+class _Day {
+  _Day({required this.open, required this.start, required this.end});
+
+  bool open;
+  TimeOfDay start;
+  TimeOfDay end;
+
+  static _Day fromJson(Json? json) {
+    final windows = objects(json?['windows']);
+    if (json == null || windows.isEmpty) {
+      if (json?['allDay'] == true) {
+        return _Day(
+          open: true,
+          start: const TimeOfDay(hour: 0, minute: 0),
+          end: const TimeOfDay(hour: 23, minute: 59),
+        );
+      }
+      return _Day(
+        open: false,
+        start: const TimeOfDay(hour: 8, minute: 0),
+        end: const TimeOfDay(hour: 18, minute: 0),
+      );
+    }
+    return _Day(
+      open: true,
+      start:
+          _parseClock(windows.first['start'] as String?) ??
+          const TimeOfDay(hour: 8, minute: 0),
+      end:
+          _parseClock(windows.first['end'] as String?) ??
+          const TimeOfDay(hour: 18, minute: 0),
+    );
+  }
+
+  Json toJson(int day) => {
+    'day': day,
+    'allDay': false,
+    'windows': open
+        ? [
+            {'start': _clock(start), 'end': _clock(end)},
+          ]
+        : <Json>[],
+  };
+}
+
+TimeOfDay? _parseClock(String? value) {
+  final parts = (value ?? '').split(':');
+  if (parts.length != 2) return null;
+  final hour = int.tryParse(parts[0]), minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+String _clock(TimeOfDay time) =>
+    '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
 class ProviderEditProfilePage extends StatefulWidget {
   const ProviderEditProfilePage({super.key});
@@ -18,170 +102,189 @@ class ProviderEditProfilePage extends StatefulWidget {
 }
 
 class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
-  final _account = AccountApi();
-  final _picker = ImagePicker();
+  final _legal = sl<LegalRemoteDataSource>();
+  final _profile = sl<ProfileRemoteDataSource>();
+  final _flow = FlowApi();
 
-  /// A capa que ele escolheu. Nula enquanto carrega, ou quando ele ainda nao
-  /// escolheu nenhuma — ai fica a capa padrao.
-  String? _coverUrl;
-  bool _savingCover = false;
+  final _name = TextEditingController();
+  final _street = TextEditingController();
+  final _number = TextEditingController();
+  final _neighborhood = TextEditingController();
+  final _city = TextEditingController();
+  final _state = TextEditingController();
+  final _zip = TextEditingController();
+  final _document = TextEditingController();
+  final _legalName = TextEditingController();
+
+  OrganizationLegalProfile? _organization;
+  List<_Day> _days = List.generate(
+    7,
+    (_) => _Day(
+      open: false,
+      start: const TimeOfDay(hour: 8, minute: 0),
+      end: const TimeOfDay(hour: 18, minute: 0),
+    ),
+  );
+  String _timeZone = 'America/Sao_Paulo';
+  String? _avatarUrl;
+
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  bool get _isCompany =>
+      _organization?.legalType == OrganizationLegalType.company;
 
   @override
   void initState() {
     super.initState();
-    _loadCover();
+    _load();
   }
-
-  Future<void> _loadCover() async {
-    try {
-      final cover = await _account.cover();
-      if (mounted) setState(() => _coverUrl = cover);
-    } on ApiException {
-      // Sem servidor, fica a capa padrao.
-    }
-  }
-
-  /// As tres formas de mexer na capa. A do portfolio vem primeiro porque e a
-  /// mais provavel: a foto boa do trabalho dele ja esta publicada ali.
-  void _showCoverOptions() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                LucideIcons.image,
-                color: context.colors.textPrimary,
-              ),
-              title: const Text('Escolher do portfolio'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickFromPortfolio();
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                LucideIcons.upload,
-                color: context.colors.textPrimary,
-              ),
-              title: const Text('Enviar uma imagem'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _uploadCover();
-              },
-            ),
-            if (_coverUrl != null)
-              ListTile(
-                leading: Icon(LucideIcons.trash_2, color: context.colors.error),
-                title: const Text('Remover capa'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _removeCover();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickFromPortfolio() async {
-    final chosen = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => ProfileCoverPage(currentCoverUrl: _coverUrl),
-      ),
-    );
-    if (chosen == null) return;
-
-    await _saveCover(() async {
-      await _account.setCover(chosen);
-      return chosen;
-    });
-  }
-
-  Future<void> _uploadCover() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
-
-    await _saveCover(() async {
-      final bytes = await picked.readAsBytes();
-      return _account.uploadCover(bytes: bytes, filename: picked.name);
-    });
-  }
-
-  Future<void> _removeCover() async {
-    await _saveCover(() async {
-      await _account.clearCover();
-      return null;
-    });
-  }
-
-  Future<void> _saveCover(Future<String?> Function() action) async {
-    setState(() => _savingCover = true);
-    try {
-      final url = await action();
-      if (!mounted) return;
-      setState(() {
-        _coverUrl = url;
-        _savingCover = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(url == null ? 'Capa removida.' : 'Capa atualizada.'),
-        ),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _savingCover = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.message),
-          backgroundColor: context.colors.error,
-        ),
-      );
-    }
-  }
-
-  
-
-  final TextEditingController _nameController = TextEditingController(
-    text: 'Roberto Pinturas e Reformas',
-  );
-  final TextEditingController _ruaController = TextEditingController();
-  final TextEditingController _numeroController = TextEditingController();
-  final TextEditingController _bairroController = TextEditingController();
-  final TextEditingController _cidadeController = TextEditingController(text: 'São Paulo, SP');
-  final TextEditingController _cepController = TextEditingController();
-  Map<String, Map<String, dynamic>> _workingHours = {
-    'Segunda-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-    'Terça-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-    'Quarta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-    'Quinta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-    'Sexta-feira': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-    'Sábado': {'isOpen': true, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 12, minute: 0)},
-    'Domingo': {'isOpen': false, 'start': const TimeOfDay(hour: 8, minute: 0), 'end': const TimeOfDay(hour: 18, minute: 0)},
-  };
-  final TextEditingController _cnpjController = TextEditingController(
-    text: '12.345.678/0001-90',
-  );
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _ruaController.dispose();
-    _numeroController.dispose();
-    _bairroController.dispose();
-    _cidadeController.dispose();
-    _cepController.dispose();
-    _cnpjController.dispose();
+    for (final controller in [
+      _name,
+      _street,
+      _number,
+      _neighborhood,
+      _city,
+      _state,
+      _zip,
+      _document,
+      _legalName,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final authState = context.read<AuthBloc>().state;
+      final organization = await _legal.getOrganizationProfile();
+      final settings = object(await _flow.get('provider/settings'));
+      final hours = settings['hours'] as Map?;
+      final byDay = {
+        for (final day in objects(hours?['days'])) day['day'] as int: day,
+      };
+      if (!mounted) return;
+      setState(() {
+        _organization = organization;
+        _avatarUrl = authState is AuthSuccess
+            ? authState.user?.organization?.avatarUrl
+            : null;
+        _name.text = organization.tradeName;
+        _document.text = organization.document ?? '';
+        _legalName.text = organization.legalName ?? '';
+        final address = organization.address;
+        _street.text = address?.street ?? '';
+        _number.text = address?.number ?? '';
+        _neighborhood.text = address?.neighborhood ?? '';
+        _city.text = address?.city ?? '';
+        _state.text = address?.state ?? '';
+        _zip.text = address?.zipCode ?? '';
+        _days = List.generate(
+          7,
+          (index) => hours?['allDay'] == true
+              ? _Day(
+                  open: true,
+                  start: const TimeOfDay(hour: 0, minute: 0),
+                  end: const TimeOfDay(hour: 23, minute: 59),
+                )
+              : _Day.fromJson(byDay[index]),
+        );
+        _timeZone = settings['timeZone'] as String? ?? _timeZone;
+        _loading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.message;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+    );
+    if (picked == null) return;
+    try {
+      final url = await _profile.updateOrganizationAvatar(File(picked.path));
+      if (!mounted) return;
+      context.read<AuthBloc>().add(OrganizationAvatarUpdated(url));
+      setState(() => _avatarUrl = url);
+    } catch (error) {
+      if (!mounted) return;
+      _warn(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  void _warn(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _profile.updateOrganizationName(_name.text.trim());
+
+      final hasAddress = [
+        _street,
+        _number,
+        _neighborhood,
+        _city,
+        _state,
+        _zip,
+      ].every((c) => c.text.trim().isNotEmpty);
+      await _legal.updateOrganizationProfile({
+        'legalType': _organization?.legalType.apiValue ?? 'INDIVIDUAL',
+        if (_isCompany) 'document': _document.text.trim(),
+        if (_isCompany) 'legalName': _legalName.text.trim(),
+        if (hasAddress)
+          'address': {
+            'street': _street.text.trim(),
+            'number': _number.text.trim(),
+            'neighborhood': _neighborhood.text.trim(),
+            'city': _city.text.trim(),
+            'state': _state.text.trim().toUpperCase(),
+            'zipCode': _zip.text.trim(),
+          },
+      });
+
+      await _flow.patch('provider/hours', {
+        'hours': {
+          'allDay': false,
+          'days': [
+            for (var index = 0; index < 7; index++) _days[index].toJson(index),
+          ],
+        },
+        'timeZone': _timeZone,
+      });
+
+      if (!mounted) return;
+      context.read<AuthBloc>().add(UserRequested());
+      Navigator.of(context).pop();
+      _warn('Perfil atualizado.');
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _warn(error.message);
+    } catch (error) {
+      if (!mounted) return;
+      _warn(error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -189,386 +292,276 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
     final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.background,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(LucideIcons.arrow_left, color: colors.primary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: Text(
           'Editar Perfil',
           style: AppTypography.h3.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: colors.textPrimary,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Capa de Perfil
-              Text(
-                'Capa do Perfil',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              GestureDetector(
-                onTap: _savingCover ? null : _showCoverOptions,
-                child: Stack(
+      body: _loading
+          ? const AppLoaderCentered()
+          : _error != null
+          ? AppEmptyState(
+              icon: LucideIcons.triangle_alert,
+              title: 'Não foi possível carregar o perfil',
+              description: _error,
+              actionLabel: 'Tentar de novo',
+              onAction: _load,
+            )
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      height: 140,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        image: DecorationImage(
-                          // A capa e escolha dele: um trabalho do portfolio,
-                          // uma arte com a logo. Sem escolha, a capa padrao.
-                          image: _coverUrl == null
-                              ? const AssetImage('assets/images/intro_bg.jpeg')
-                              : NetworkImage(QuotesApi.photoUrl(_coverUrl!))
-                                    as ImageProvider,
-                          fit: BoxFit.cover,
+                    Center(child: _avatar(colors)),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    _label('Nome da Empresa / Profissional'),
+                    _field(_name, colors),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    if (_isCompany) ...[
+                      _label('Razão social'),
+                      _field(_legalName, colors),
+                      const SizedBox(height: AppSpacing.lg),
+                      _label('CNPJ'),
+                      _field(_document, colors, hint: '00.000.000/0000-00'),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    _label('Endereço'),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: _field(_street, colors, hint: 'Rua'),
                         ),
-                      ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _field(_number, colors, hint: 'Número'),
+                        ),
+                      ],
                     ),
-                    if (_savingCover)
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                          ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _field(_neighborhood, colors, hint: 'Bairro'),
                         ),
-                      ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(child: _field(_city, colors, hint: 'Cidade')),
+                      ],
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(child: _field(_state, colors, hint: 'UF')),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          flex: 2,
+                          child: _field(_zip, colors, hint: 'CEP'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    _label('Horário de atendimento'),
+                    _hoursEditor(colors),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Foto de Perfil
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.borderLight),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/logo_pintor.jpg'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+            ),
+      bottomNavigationBar: _loading || _error != null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: AppAccentButton(
+                  label: 'Salvar Alterações',
+                  onPressed: _save,
+                  isLoading: _saving,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+            ),
+    );
+  }
 
-              // Formulário
-              Text(
-                'Nome da Empresa / Profissional',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildTextField(_nameController, colors),
-              const SizedBox(height: AppSpacing.lg),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Localização',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _ruaController.text = 'Rua das Flores';
-                        _numeroController.text = '123';
-                        _bairroController.text = 'Centro';
-                        _cidadeController.text = 'São Paulo - SP';
-                        _cepController.text = '01000-000';
-                      });
-                    },
-                    icon: Icon(LucideIcons.map_pin, size: 14, color: colors.primary),
-                    label: Text(
-                      'Usar minha localização', 
-                      style: AppTypography.caption.copyWith(color: colors.primary, fontWeight: FontWeight.bold),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildTextField(_ruaController, colors, hint: 'Rua'),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    flex: 1,
-                    child: _buildTextField(_numeroController, colors, hint: 'Número'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(_bairroController, colors, hint: 'Bairro'),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _buildTextField(_cidadeController, colors, hint: 'Cidade, UF'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildTextField(_cepController, colors, hint: 'CEP'),
-              const SizedBox(height: AppSpacing.lg),
-
-              Text(
-                'CNPJ ou CPF (Opcional)',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildTextField(_cnpjController, colors),
-              const SizedBox(height: AppSpacing.lg),
-
-              Text(
-                'Horário de funcionamento',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildWorkingHoursEditor(colors),
-              const SizedBox(height: AppSpacing.xxl),
-            ],
+  Widget _avatar(AppColorsTheme colors) {
+    final url = _avatarUrl;
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.surfaceLight,
+            border: Border.all(color: colors.borderLight),
+            image: url != null && url.isNotEmpty
+                ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
+                : null,
           ),
+          alignment: Alignment.center,
+          child: url != null && url.isNotEmpty
+              ? null
+              : Icon(LucideIcons.building_2, color: colors.textSecondary),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Perfil atualizado com sucesso!')),
-              );
-            },
-            borderRadius: BorderRadius.circular(8),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: _pickAvatar,
             child: Container(
-              height: 56,
-              width: double.infinity,
-              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: colors.primary,
-                borderRadius: BorderRadius.circular(8),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
               ),
-              child: Text(
-                'Salvar Alterações',
-                style: AppTypography.h3.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: const Icon(
+                LucideIcons.camera,
+                color: Colors.white,
+                size: 16,
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildTextField(
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    child: Text(
+      text,
+      style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
+    ),
+  );
+
+  Widget _field(
     TextEditingController controller,
     AppColorsTheme colors, {
     String? hint,
   }) {
     return TextField(
       controller: controller,
-      decoration: _inputDecoration(colors, hint: hint),
-    );
-  }
-
-  InputDecoration _inputDecoration(AppColorsTheme colors, {String? hint}) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTypography.body.copyWith(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colors.borderLight),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colors.borderLight),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colors.primary),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 16,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: AppTypography.body.copyWith(color: colors.textSecondary),
+        filled: true,
+        fillColor: context.colors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderLight),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.primary),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 16,
+        ),
       ),
     );
   }
 
-  Widget _buildWorkingHoursEditor(AppColorsTheme colors) {
-    final days = [
-      'Segunda-feira',
-      'Terça-feira',
-      'Quarta-feira',
-      'Quinta-feira',
-      'Sexta-feira',
-      'Sábado',
-      'Domingo'
-    ];
-    
+  Widget _hoursEditor(AppColorsTheme colors) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: colors.borderLight),
       ),
       child: Column(
-        children: List.generate(days.length, (index) {
-          final day = days[index];
-          final config = _workingHours[day]!;
-          final isWeekend = !config['isOpen'];
-          
-          String formatTime(TimeOfDay time) {
-            return ':';
-          }
-          
-          final timeStr = isWeekend 
-              ? 'Fechado' 
-              : ' às ';
-          
-          return Column(
-            children: [
-              InkWell(
-                onTap: () => _showEditDayDialog(day),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        day,
-                        style: AppTypography.body.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colors.textPrimary,
-                        ),
+        children: [
+          for (var index = 0; index < 7; index++) ...[
+            InkWell(
+              onTap: () => _editDay(index),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _dayNames[index],
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colors.textPrimary,
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            timeStr,
-                            style: AppTypography.body.copyWith(
-                              color: isWeekend ? colors.error : colors.textSecondary,
-                              fontWeight: isWeekend ? FontWeight.bold : FontWeight.normal,
-                            ),
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          _days[index].open
+                              ? '${_clock(_days[index].start)} às ${_clock(_days[index].end)}'
+                              : 'Fechado',
+                          style: AppTypography.body.copyWith(
+                            color: _days[index].open
+                                ? colors.textSecondary
+                                : colors.error,
+                            fontWeight: _days[index].open
+                                ? FontWeight.normal
+                                : FontWeight.bold,
                           ),
-                          const SizedBox(width: 8),
-                          Icon(LucideIcons.chevron_right, size: 16, color: Colors.grey[400]),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          LucideIcons.chevron_right,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              if (index < days.length - 1)
-                Divider(height: 1, thickness: 1, color: Colors.grey.withOpacity(0.1), indent: 16, endIndent: 16),
-            ],
-          );
-        }),
+            ),
+            if (index < 6)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colors.borderLight,
+                indent: 16,
+                endIndent: 16,
+              ),
+          ],
+        ],
       ),
     );
   }
 
-  void _showEditDayDialog(String day) {
-    final config = _workingHours[day]!;
-    bool tempIsOpen = config['isOpen'];
-    TimeOfDay tempStart = config['start'];
-    TimeOfDay tempEnd = config['end'];
+  Future<void> _editDay(int index) async {
+    final current = _days[index];
+    var open = current.open;
+    var start = current.start;
+    var end = current.end;
 
-    showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            String formatTime(TimeOfDay time) {
-              return ':';
-            }
-
+          builder: (sheetContext, setSheetState) {
             return Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
@@ -576,84 +569,47 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Horários: ',
-                    style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+                    _dayNames[index],
+                    style: AppTypography.h3.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   SwitchListTile(
-                    title: const Text('Aberto neste dia'),
-                    value: tempIsOpen,
-                    activeColor: Colors.green,
-                    onChanged: (val) {
-                      setModalState(() => tempIsOpen = val);
-                    },
+                    title: const Text('Atende neste dia'),
+                    value: open,
+                    onChanged: (value) => setSheetState(() => open = value),
                   ),
-                  if (tempIsOpen) ...[
+                  if (open) ...[
                     const SizedBox(height: AppSpacing.md),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Abertura'),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: tempStart,
-                            );
-                            if (picked != null) {
-                              setModalState(() => tempStart = picked);
-                            }
-                          },
-                          child: Text(
-                            formatTime(tempStart),
-                            style: AppTypography.h3.copyWith(color: Colors.blue),
-                          ),
-                        ),
-                      ],
+                    _timeRow(
+                      'Abertura',
+                      start,
+                      (picked) => setSheetState(() => start = picked),
                     ),
                     const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Fechamento'),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: tempEnd,
-                            );
-                            if (picked != null) {
-                              setModalState(() => tempEnd = picked);
-                            }
-                          },
-                          child: Text(
-                            formatTime(tempEnd),
-                            style: AppTypography.h3.copyWith(color: Colors.blue),
-                          ),
-                        ),
-                      ],
+                    _timeRow(
+                      'Fechamento',
+                      end,
+                      (picked) => setSheetState(() => end = picked),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        _workingHours[day] = {
-                          'isOpen': tempIsOpen,
-                          'start': tempStart,
-                          'end': tempEnd,
-                        };
+                        _days[index] = _Day(open: open, start: start, end: end);
                       });
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetContext);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
-                    child: const Text('Salvar Alterações', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Aplicar',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -664,4 +620,29 @@ class _ProviderEditProfilePageState extends State<ProviderEditProfilePage> {
     );
   }
 
+  Widget _timeRow(
+    String label,
+    TimeOfDay value,
+    ValueChanged<TimeOfDay> onPicked,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        TextButton(
+          onPressed: () async {
+            final picked = await showTimePicker(
+              context: context,
+              initialTime: value,
+            );
+            if (picked != null) onPicked(picked);
+          },
+          child: Text(
+            _clock(value),
+            style: AppTypography.h3.copyWith(color: context.colors.accentText),
+          ),
+        ),
+      ],
+    );
+  }
 }

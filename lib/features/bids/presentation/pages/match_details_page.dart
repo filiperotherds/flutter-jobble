@@ -602,7 +602,7 @@ class _MatchStatusCard extends StatelessWidget {
         'A conclusão foi confirmada pelo cliente.',
       ),
       ('IN_PROGRESS', _) => (
-        colors.info,
+        colors.textSecondary,
         'Serviço em andamento',
         'Acompanhe o andamento e a conclusão pelo contrato.',
       ),
@@ -617,7 +617,7 @@ class _MatchStatusCard extends StatelessWidget {
         'Aceite para entrar na lista do cliente. O valor pode vir depois.',
       ),
       (_, MatchStatus.accepted) => (
-        colors.info,
+        colors.textSecondary,
         'Você aceitou',
         'O cliente ainda está escolhendo. Uma devolutiva ajuda a decidir.',
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class ClientTermsPage extends StatelessWidget {
   const ClientTermsPage({super.key});
@@ -16,18 +17,15 @@ class ClientTermsPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: colors.background,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: context.colors.background,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
-          leading: IconButton(
-            icon: Icon(LucideIcons.arrow_left, color: colors.textPrimary),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Voltar',
-          ),
+          leadingWidth: AppBackButton.slotWidth,
+          leading: const AppBackButton(),
           title: Text(
             'Termos e Políticas',
             style: AppTypography.h3.copyWith(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: colors.textPrimary,
             ),
           ),
@@ -65,6 +63,7 @@ class ClientTermsPage extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         _buildDocumentHeader(
+          context,
           title: 'Termos e Condições Gerais de Uso',
           updatedAt: '15 de Janeiro de 2026',
           version: 'Versão 2.4',
@@ -72,6 +71,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '1',
           title: 'Objeto da Plataforma',
           content:
@@ -80,6 +80,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '2',
           title: 'Orçamentos e Assinatura Digital',
           content:
@@ -88,7 +89,17 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '3',
+          title: 'Custódia de Pagamentos (Jobble Pay)',
+          content:
+              'Os pagamentos realizados pelo Cliente (Cartão de Crédito ou Pix) são retidos com total segurança em conta de custódia Jobble. O repasse ao Prestador só é liberado após a confirmação de conclusão do serviço pelo Cliente ou transcorrido o prazo de validação técnica sem contestações.',
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        _buildSectionCard(
+          context,
+          number: '4',
           title: 'Política de Cancelamento',
           content:
               'O cancelamento solicitado pelo Cliente com mais de 24 horas de antecedência do horário agendado confere direito ao reembolso de 100% do valor retido. Cancelamentos com prazo inferior a 24 horas podem incorrer em taxa de deslocamento em favor do prestador.',
@@ -106,6 +117,7 @@ class ClientTermsPage extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         _buildDocumentHeader(
+          context,
           title: 'Política de Privacidade e LGPD',
           updatedAt: '15 de Janeiro de 2026',
           version: 'Versão 1.8 - Lei Federal nº 13.709/2018',
@@ -113,6 +125,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '1',
           title: 'Coleta de Dados Pessoais',
           content:
@@ -121,6 +134,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '2',
           title: 'Compartilhamento com Prestadores',
           content:
@@ -129,6 +143,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '3',
           title: 'Seus Direitos como Titular',
           content:
@@ -147,6 +162,7 @@ class ClientTermsPage extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         _buildDocumentHeader(
+          context,
           title: 'Termo de Garantia Jobble Protege',
           updatedAt: '15 de Janeiro de 2026',
           version: 'Garantia Oficial Jobble',
@@ -154,6 +170,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '1',
           title: 'Cobertura de Qualidade',
           content:
@@ -162,6 +179,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '2',
           title: 'Como Acionar a Garantia',
           content:
@@ -170,6 +188,7 @@ class ClientTermsPage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
 
         _buildSectionCard(
+          context,
           number: '3',
           title: 'Exclusões da Garantia',
           content:
@@ -183,7 +202,8 @@ class ClientTermsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDocumentHeader({
+  Widget _buildDocumentHeader(
+    BuildContext context, {
     required String title,
     required String updatedAt,
     required String version,
@@ -191,16 +211,16 @@ class ClientTermsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.colors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+            style: AppTypography.h3.copyWith(fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Wrap(
@@ -211,13 +231,13 @@ class ClientTermsPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  color: context.colors.accentText.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   version,
-                  style: const TextStyle(
-                    color: Color(0xFF10B981),
+                  style: TextStyle(
+                    color: context.colors.accentText,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
                   ),
@@ -225,7 +245,10 @@ class ClientTermsPage extends StatelessWidget {
               ),
               Text(
                 'Atualizado em $updatedAt',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -234,7 +257,8 @@ class ClientTermsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionCard({
+  Widget _buildSectionCard(
+    BuildContext context, {
     required String number,
     required String title,
     required String content,
@@ -242,9 +266,9 @@ class ClientTermsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.colors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,13 +280,13 @@ class ClientTermsPage extends StatelessWidget {
                 height: 24,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
-                  borderRadius: BorderRadius.circular(6),
+                  color: context.colors.accentSoft,
+                  borderRadius: AppRadius.pillAll,
                 ),
                 child: Text(
                   number,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.colors.accentText,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -283,7 +307,7 @@ class ClientTermsPage extends StatelessWidget {
           Text(
             content,
             style: AppTypography.body.copyWith(
-              color: Colors.grey[700],
+              color: context.colors.textBody,
               height: 1.5,
             ),
           ),
@@ -297,16 +321,16 @@ class ClientTermsPage extends StatelessWidget {
       icon: const Icon(LucideIcons.file_down, size: 18),
       label: const Text('Baixar Termos em PDF'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF10B981),
-        side: const BorderSide(color: Color(0xFF10B981)),
+        foregroundColor: context.colors.textPrimary,
+        side: BorderSide(color: context.colors.borderLight),
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const StadiumBorder(),
       ),
       onPressed: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Download do documento oficial em PDF iniciado...'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: context.colors.inverse,
           ),
         );
       },

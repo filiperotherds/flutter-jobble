@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 import 'package:flutter_tcc/core/widgets/app_empty_state.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class ReviewsPage extends StatelessWidget {
   const ReviewsPage({super.key});
@@ -16,7 +17,11 @@ class ReviewsPage extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Avaliações')),
+      appBar: AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: const Text('Avaliações'),
+      ),
       body: empty,
     );
   }

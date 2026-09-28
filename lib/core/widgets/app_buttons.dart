@@ -6,7 +6,7 @@ import 'package:flutter_tcc/core/theme/app_spacing.dart';
 /// Três níveis de ação, todos em pill de 48 de altura.
 ///
 /// - [AppPrimaryButton]: a ação principal da tela. Pill floresta.
-/// - [AppAccentButton]: confirmação ou destaque (lima). No máximo um por tela.
+/// - [AppAccentButton]: confirmação; mantém o mesmo verde escuro das ações principais.
 /// - [AppSecondaryButton]: alternativa, pill branca com borda fina.
 ///
 /// Pressionar encolhe o botão para 97% — a escala é o feedback, a cor não
@@ -55,8 +55,8 @@ class _BaseButtonState extends State<_BaseButton> {
     const onImageInk = Color(0xFFFFFFFF);
 
     final Color spinnerColor = switch (widget.kind) {
-      _ButtonKind.primary => colors.onInverse,
-      _ButtonKind.accent => colors.onPrimary,
+      _ButtonKind.primary => colors.onAction,
+      _ButtonKind.accent => colors.onAction,
       _ButtonKind.secondary => widget.onImage ? onImageInk : colors.textPrimary,
     };
 
@@ -97,9 +97,9 @@ class _BaseButtonState extends State<_BaseButton> {
         onPressed: onPressed,
         style: widget.onImage
             ? OutlinedButton.styleFrom(
-                foregroundColor: onImageInk,
+                foregroundColor: context.colors.textPrimary,
                 backgroundColor: onImageInk.withValues(alpha: 0.12),
-                side: BorderSide(color: onImageInk.withValues(alpha: 0.7)),
+                side: BorderSide(color: context.colors.borderLight),
               ).merge(sizeStyle)
             : sizeStyle,
         child: child,

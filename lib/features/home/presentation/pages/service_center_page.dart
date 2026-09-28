@@ -7,6 +7,7 @@ import 'package:flutter_tcc/features/contracts/presentation/pages/contracts_list
 import 'package:flutter_tcc/features/home/presentation/pages/dashboard_page.dart';
 import 'package:flutter_tcc/features/home/presentation/pages/settings_center_page.dart';
 import 'package:flutter_tcc/features/profile/presentation/pages/profile_page.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 /// Casca do app profissional: Início, Serviços, Contratos, Ajustes e Perfil.
 ///
@@ -77,11 +78,17 @@ class _ServiceCenterPageState extends State<ServiceCenterPage> {
   PreferredSizeWidget? _buildAppBar() {
     final entry = _titles[_currentIndex];
     if (entry == null) {
-      return AppBar(title: const Text('Minha conta profissional'));
+      return AppBar(
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
+        title: const Text('Minha conta profissional'),
+      );
     }
     final (title, descriptor) = entry;
 
     return AppBar(
+      leadingWidth: AppBackButton.slotWidth,
+      leading: const AppBackButton(),
       toolbarHeight: 68,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

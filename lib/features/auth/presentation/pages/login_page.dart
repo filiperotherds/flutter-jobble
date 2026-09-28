@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
-import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/auth_error_card.dart';
 import 'package:flutter_tcc/features/auth/presentation/widgets/login_form.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -20,15 +19,8 @@ class LoginPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: AppSize.iconButton + AppSpacing.md + AppSpacing.xs,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md),
-          child: AppCircleIconButton(
-            icon: LucideIcons.arrow_left,
-            tooltip: 'Voltar',
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
+        leadingWidth: AppBackButton.slotWidth,
+        leading: const AppBackButton(),
         title: const Text('Entrar'),
       ),
       body: SafeArea(

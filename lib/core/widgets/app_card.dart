@@ -19,7 +19,7 @@ final ThemeData _onBrandTheme = AppTheme.light;
 enum AppCardTone { plain, sunken, brand, brandSoft, inverse }
 
 /// Superfície de conteúdo: branco, raio 18, borda de 1px e a sombra `card`
-/// tingida de floresta. Nunca borda colorida à esquerda, nunca contorno em
+/// neutra. Nunca borda colorida à esquerda, nunca contorno em
 /// lima.
 class AppCard extends StatelessWidget {
   const AppCard({
@@ -58,8 +58,12 @@ class AppCard extends StatelessWidget {
         bordered ? colors.border : colors.borderLight,
       ),
       AppCardTone.sunken => (colors.surfaceLight, null, colors.borderLight),
-      AppCardTone.brand => (null, AppColorsTheme.brandGradient, Colors.transparent),
-      AppCardTone.brandSoft => (colors.accentSoft, null, colors.primary),
+      AppCardTone.brand => (
+        null,
+        AppColorsTheme.brandGradient,
+        Colors.transparent,
+      ),
+      AppCardTone.brandSoft => (colors.surface, null, colors.borderLight),
       AppCardTone.inverse => (colors.inverse, null, colors.inverse),
     };
 
@@ -124,7 +128,7 @@ class AppSectionHeader extends StatelessWidget {
 /// Card de escolha única: título, apoio e um rádio à direita.
 ///
 /// A seleção é comunicada por três sinais somados — fundo lima pálido, borda
-/// lima e o rádio preenchido — para não depender só de cor.
+/// neutra e o rádio preenchido — para não depender só de cor.
 class AppSelectableCard extends StatelessWidget {
   const AppSelectableCard({
     super.key,
@@ -157,7 +161,7 @@ class AppSelectableCard extends StatelessWidget {
             color: selected ? colors.accentSoft : colors.surface,
             borderRadius: AppRadius.mdAll,
             border: Border.all(
-              color: selected ? colors.primary : colors.borderLight,
+              color: colors.borderLight,
               width: AppSize.border,
             ),
             boxShadow: AppShadow.xs,

@@ -9,6 +9,17 @@ abstract class ProfileRemoteDataSource {
   Future<String> updateOrganizationAvatar(File file);
   Future<void> updateOrganizationName(String name);
   Future<void> updateUserName(String name);
+
+  /// Sobe a foto e devolve a URL persistente que vai no projeto.
+  Future<String> uploadPhoto(File file);
+  Future<ProjectModel> createProject({
+    required String title,
+    required String city,
+    required String state,
+    String? description,
+    List<String> photoUrls,
+  });
+  Future<void> deleteProject(String id);
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
@@ -20,7 +31,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   Future<List<ProjectModel>> getProjects() async {
     try {
       final response = await dioClient.dio.get('/projects');
-      final list = response.data as List<dynamic>;
+      // O backend devolve `{ projects: [...] }`, não a lista crua.
+      final list = (response.data['projects'] as List<dynamic>?) ?? const [];
       return list
           .map((e) => ProjectModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -73,6 +85,47 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<String> uploadPhoto(File file) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        file.path,
+        filename: file.path.split('/').last,
+      ),
+    });
+    final response = await dioClient.dio.post('/uploads', data: formData);
+    return response.data['url'] as String;
+  }
+
+  @override
+  Future<ProjectModel> createProject({
+    required String title,
+    required String city,
+    required String state,
+    String? description,
+    List<String> photoUrls = const [],
+  }) async {
+    final response = await dioClient.dio.post(
+      '/projects',
+      data: {
+        'title': title,
+        'city': city,
+        'state': state,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        'photoUrls': photoUrls,
+      },
+    );
+    return ProjectModel.fromJson(
+      (response.data['project'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  @override
+  Future<void> deleteProject(String id) async {
+    await dioClient.dio.delete('/projects/$id');
   }
 
   @override

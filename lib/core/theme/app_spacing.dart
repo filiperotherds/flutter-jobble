@@ -100,26 +100,26 @@ abstract final class AppSize {
 abstract final class AppShadow {
   /// Levantamento de 1px — chips de ícone, stat cards.
   static const List<BoxShadow> xs = [
-    BoxShadow(color: Color(0x0D0D2F28), offset: Offset(0, 1), blurRadius: 2),
+    BoxShadow(color: Color(0x0D000000), offset: Offset(0, 1), blurRadius: 2),
   ];
 
   static const List<BoxShadow> sm = [
-    BoxShadow(color: Color(0x0F0D2F28), offset: Offset(0, 1), blurRadius: 3),
-    BoxShadow(color: Color(0x0A0D2F28), offset: Offset(0, 1), blurRadius: 1),
+    BoxShadow(color: Color(0x0F000000), offset: Offset(0, 1), blurRadius: 3),
+    BoxShadow(color: Color(0x0A000000), offset: Offset(0, 1), blurRadius: 1),
   ];
 
   /// A sombra padrão de card.
   static const List<BoxShadow> card = [
-    BoxShadow(color: Color(0x0D0D2F28), offset: Offset(0, 2), blurRadius: 8),
+    BoxShadow(color: Color(0x0D000000), offset: Offset(0, 2), blurRadius: 8),
   ];
 
   static const List<BoxShadow> raised = [
-    BoxShadow(color: Color(0x140D2F28), offset: Offset(0, 8), blurRadius: 24),
+    BoxShadow(color: Color(0x14000000), offset: Offset(0, 8), blurRadius: 24),
   ];
 
   /// Menus, folhas e diálogos.
   static const List<BoxShadow> overlay = [
-    BoxShadow(color: Color(0x240D2F28), offset: Offset(0, 20), blurRadius: 48),
+    BoxShadow(color: Color(0x24000000), offset: Offset(0, 20), blurRadius: 48),
   ];
 }
 

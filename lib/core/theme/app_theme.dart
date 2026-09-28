@@ -11,8 +11,7 @@ import 'app_typography.dart';
 /// Regras que atravessam todos os componentes:
 /// - todo botão, badge e botão de ícone é **pill**; campos são retângulos de
 ///   10, cards de 18.
-/// - a CTA principal é floresta (`inverse`); a de confirmação/destaque é lima
-///   (`primary`). No escuro a CTA vira lima.
+/// - todas as ações preenchidas usam floresta e texto branco.
 /// - bordas são sempre de 1px, em cinza claro. Foco é floresta.
 /// - toque não espalha tinta: o feedback é um leve tingimento cinza nas
 ///   linhas e a escala nos botões.
@@ -128,10 +127,10 @@ abstract final class AppTheme {
       // CTA principal: pill floresta. Desabilitado é a mesma pill a 45%.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colors.inverse,
-          foregroundColor: colors.onInverse,
-          disabledBackgroundColor: colors.inverse.withValues(alpha: 0.45),
-          disabledForegroundColor: colors.onInverse.withValues(alpha: 0.9),
+          backgroundColor: colors.action,
+          foregroundColor: colors.onAction,
+          disabledBackgroundColor: colors.action.withValues(alpha: 0.45),
+          disabledForegroundColor: colors.onAction.withValues(alpha: 0.9),
           minimumSize: const Size(double.infinity, AppSize.button),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           elevation: 0,
@@ -141,13 +140,13 @@ abstract final class AppTheme {
         ),
       ),
 
-      // Ação de destaque: pill lima com tinta floresta.
+      // Ações preenchidas compartilham o mesmo verde escuro.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colors.primary,
-          foregroundColor: colors.onPrimary,
-          disabledBackgroundColor: colors.primary.withValues(alpha: 0.45),
-          disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.7),
+          backgroundColor: colors.action,
+          foregroundColor: colors.onAction,
+          disabledBackgroundColor: colors.action.withValues(alpha: 0.45),
+          disabledForegroundColor: colors.onAction.withValues(alpha: 0.7),
           minimumSize: const Size(double.infinity, AppSize.button),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           elevation: 0,
@@ -196,6 +195,12 @@ abstract final class AppTheme {
         ),
       ),
 
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colors.action,
+        foregroundColor: colors.onAction,
+        elevation: 0,
+        shape: const StadiumBorder(),
+      ),
       iconTheme: IconThemeData(color: colors.textPrimary, size: 20),
 
       cardTheme: CardThemeData(

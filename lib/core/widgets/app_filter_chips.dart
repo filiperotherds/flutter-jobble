@@ -90,7 +90,9 @@ class _Chip<T> extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
+          child: Container(
+            constraints: const BoxConstraints(minHeight: AppSize.iconButton),
+            alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: AppSpacing.xs + 2,

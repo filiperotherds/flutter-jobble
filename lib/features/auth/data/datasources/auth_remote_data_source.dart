@@ -3,6 +3,7 @@ import 'package:flutter_tcc/features/auth/data/models/login_request.dart';
 import 'package:flutter_tcc/features/auth/data/models/signup_request.dart';
 import 'package:flutter_tcc/features/auth/data/models/login_response.dart';
 import 'package:flutter_tcc/features/auth/data/models/user_model.dart';
+import 'package:flutter_tcc/core/network/api_exception.dart';
 import 'package:flutter_tcc/core/network/dio_client.dart';
 
 abstract class AuthRemoteDataSource {
@@ -164,20 +165,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserModel> getMe() async {
-    try {
+    // Erro traduzido para `ApiException` porque quem chama precisa distinguir
+    // "o servidor recusou o token" de "não deu para falar com o servidor": só
+    // o segundo caso permite abrir o app com o cadastro guardado em cache.
+    return apiCall(() async {
       final response = await dioClient.dio.get('/users/profile');
       return UserModel.fromJson(response.data);
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        final message = e.response?.data['message'];
-        if (message != null) {
-          throw Exception(message);
-        }
-      }
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
+    });
   }
 
   @override

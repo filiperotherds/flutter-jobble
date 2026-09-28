@@ -16,7 +16,7 @@ class OrganizationData extends Equatable {
     this.avatarUrl,
     this.tags,
     this.bio,
-    this.rating = 5.0,
+    this.rating = 0,
     this.projectsCount = 0,
     this.matchesCount = 0,
   });

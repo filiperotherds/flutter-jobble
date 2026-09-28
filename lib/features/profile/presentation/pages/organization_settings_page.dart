@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/profile/presentation/widgets/tag_input.dart';
+import 'package:flutter_tcc/core/widgets/app_back_button.dart';
 
 class OrganizationSettingsPage extends StatefulWidget {
   const OrganizationSettingsPage({super.key});
@@ -81,15 +81,8 @@ class _OrganizationSettingsPageState extends State<OrganizationSettingsPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leadingWidth: AppSize.iconButton + AppSpacing.md + AppSpacing.xs,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.md),
-            child: AppCircleIconButton(
-              icon: LucideIcons.arrow_left,
-              tooltip: 'Voltar',
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
+          leadingWidth: AppBackButton.slotWidth,
+          leading: const AppBackButton(),
           title: const Text('Parâmetros'),
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
