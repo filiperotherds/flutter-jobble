@@ -10,7 +10,6 @@ import 'package:flutter_tcc/features/auth/data/datasources/auth_remote_data_sour
 import 'package:flutter_tcc/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:flutter_tcc/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:flutter_tcc/features/auth/domain/repositories/auth_repository.dart';
-import 'package:flutter_tcc/features/auth/domain/usecases/google_login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/verify_email_usecase.dart';
@@ -48,7 +47,6 @@ Future<void> init() async {
   sl.registerFactory(
     () => AuthBloc(
       loginUseCase: sl(),
-      googleLoginUseCase: sl(),
       signupUseCase: sl(),
       verifyEmailUseCase: sl(),
       completeOnboardingUseCase: sl(),
@@ -62,7 +60,6 @@ Future<void> init() async {
 
   // Use cases
   sl.registerLazySingleton(() => LoginUseCase(repository: sl()));
-  sl.registerLazySingleton(() => GoogleLoginUseCase(repository: sl()));
   sl.registerLazySingleton(() => SignupUseCase(repository: sl()));
   sl.registerLazySingleton(() => VerifyEmailUseCase(repository: sl()));
   sl.registerLazySingleton(() => CompleteOnboardingUseCase(repository: sl()));

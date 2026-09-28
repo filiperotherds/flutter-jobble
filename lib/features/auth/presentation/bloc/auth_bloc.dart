@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
-import 'package:flutter_tcc/features/auth/domain/usecases/google_login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/login_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:flutter_tcc/features/auth/domain/usecases/verify_email_usecase.dart';
@@ -20,7 +19,6 @@ import 'package:flutter_tcc/features/auth/domain/entities/user.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
-  final GoogleLoginUseCase googleLoginUseCase;
   final SignupUseCase signupUseCase;
   final VerifyEmailUseCase verifyEmailUseCase;
   final CompleteOnboardingUseCase completeOnboardingUseCase;
@@ -35,7 +33,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({
     required this.loginUseCase,
-    required this.googleLoginUseCase,
     required this.signupUseCase,
     required this.verifyEmailUseCase,
     required this.completeOnboardingUseCase,
@@ -48,7 +45,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // do token em vez de piscar a tela de entrada para quem já entrou.
   }) : super(AuthRestoring()) {
     on<LoginSubmitted>(_onLoginSubmitted);
-    on<GoogleSignInSubmitted>(_onGoogleSignInSubmitted);
     on<SignupSubmitted>(_onSignupSubmitted);
     on<EmailVerificationSubmitted>(_onEmailVerificationSubmitted);
     on<CompleteOnboardingSubmitted>(_onCompleteOnboardingSubmitted);
@@ -113,25 +109,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final result = await loginUseCase.execute(event.email, event.password);
-      await tokenService.saveToken(result.accessToken);
-
-      final user = await getMeUseCase.execute();
-      emit(AuthSuccess(accessToken: result.accessToken, user: user));
-      unawaited(_syncReminders());
-    } catch (e) {
-      final message = e.toString().replaceAll('Exception: ', '');
-      emit(AuthFailure(message: message));
-    }
-  }
-
-  /// Mesma chegada do login por senha: guarda o token e carrega o usuário.
-  Future<void> _onGoogleSignInSubmitted(
-    GoogleSignInSubmitted event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-    try {
-      final result = await googleLoginUseCase.execute(event.idToken);
       await tokenService.saveToken(result.accessToken);
 
       final user = await getMeUseCase.execute();

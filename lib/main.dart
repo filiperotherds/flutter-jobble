@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'package:flutter_tcc/core/config/app_config.dart';
-import 'package:flutter_tcc/core/services/google_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -65,32 +62,8 @@ class MyApp extends StatelessWidget {
 /// Fica acima do `Navigator` em vez de virar uma rota: assim um 401 em qualquer
 /// tela derruba a sessão e a árvore inteira volta para a abertura, sem depender
 /// de quem estava empilhado.
-class _SessionGate extends StatefulWidget {
+class _SessionGate extends StatelessWidget {
   const _SessionGate();
-
-  @override
-  State<_SessionGate> createState() => _SessionGateState();
-}
-
-class _SessionGateState extends State<_SessionGate> {
-  StreamSubscription<String>? _googleSignIn;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!AppConfig.isGoogleSignInEnabled) return;
-    // Uma única assinatura atende ao botão da abertura e ao formulário de login.
-    _googleSignIn = GoogleAuthService.instance.idTokens.listen((idToken) {
-      if (!mounted) return;
-      context.read<AuthBloc>().add(GoogleSignInSubmitted(idToken: idToken));
-    });
-  }
-
-  @override
-  void dispose() {
-    _googleSignIn?.cancel();
-    super.dispose();
-  }
 
   /// Só estes três estados dizem algo sobre a sessão. Os outros (`AuthLoading`,
   /// `AuthOnboardingSuccess`, `AuthFailure`…) são passos de formulário e não
@@ -102,9 +75,16 @@ class _SessionGateState extends State<_SessionGate> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listenWhen: (previous, current) =>
-          _decides(current) &&
-          (current is AuthSuccess) != (previous is AuthSuccess),
-      listener: (_, _) {
+          current is AuthFailure ||
+          (_decides(current) &&
+              (current is AuthSuccess) != (previous is AuthSuccess)),
+      listener: (context, state) {
+        if (state is AuthFailure) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+          return;
+        }
         MyApp.navigatorKey.currentState?.popUntil((route) => route.isFirst);
       },
       buildWhen: (_, current) => _decides(current),

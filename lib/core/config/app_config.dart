@@ -18,18 +18,6 @@ class AppConfig {
     defaultValue: 'https://jobble-api.up.railway.app',
   );
 
-  /// Client ID OAuth do Google, do tipo "Web application".
-  ///
-  /// Vem de `--dart-define=GOOGLE_CLIENT_ID=...`. Sem ele o botão "Entrar com
-  /// o Google" fica escondido: o Google recusa qualquer tentativa de login de
-  /// uma origem que não esteja registrada nesse Client ID.
-  static const String googleClientId = String.fromEnvironment(
-    'GOOGLE_CLIENT_ID',
-  );
-
-  /// Se dá para oferecer o login com o Google nesta build.
-  static bool get isGoogleSignInEnabled => googleClientId.isNotEmpty;
-
   static const String _uploadsBaseUrl = String.fromEnvironment(
     'UPLOADS_BASE_URL',
   );

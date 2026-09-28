@@ -1,8 +1,5 @@
-import 'package:flutter_tcc/core/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:flutter_tcc/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 import 'package:flutter_tcc/core/theme/app_colors.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -30,13 +27,6 @@ class _LoginFormState extends State<LoginForm> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _submit() {
@@ -133,19 +123,6 @@ class _LoginFormState extends State<LoginForm> {
               isLoading: isLoading,
               onPressed: _submit,
             ),
-            if (AppConfig.isGoogleSignInEnabled) ...[
-              const SizedBox(height: AppSpacing.md),
-              Center(
-                child: Text(
-                  'ou',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Center(child: GoogleSignInButton(onError: _showError)),
-            ],
           ],
         );
       },

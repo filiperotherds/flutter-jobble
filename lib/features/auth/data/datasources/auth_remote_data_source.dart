@@ -9,8 +9,6 @@ import 'package:flutter_tcc/core/network/dio_client.dart';
 abstract class AuthRemoteDataSource {
   Future<LoginResponse> login(LoginRequest request);
 
-  /// Troca o `idToken` do Google por uma sessão do Jobble.
-  Future<LoginResponse> loginWithGoogle(String idToken);
   Future<void> signup(SignupRequest request);
   Future<void> verifyEmail(String email, String code);
   Future<void> resendVerificationCode(String email);
@@ -36,28 +34,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await dioClient.dio.post(
         '/auth/signin',
         data: request.toJson(),
-      );
-
-      return LoginResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        final message = e.response?.data['message'];
-        if (message != null) {
-          throw Exception(message);
-        }
-      }
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<LoginResponse> loginWithGoogle(String idToken) async {
-    try {
-      final response = await dioClient.dio.post(
-        '/auth/google',
-        data: {'idToken': idToken},
       );
 
       return LoginResponse.fromJson(response.data);

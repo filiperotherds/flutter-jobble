@@ -1,4 +1,3 @@
-import 'package:flutter_tcc/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tcc/core/constants/app_assets.dart';
 import 'package:flutter_tcc/core/theme/app_spacing.dart';
@@ -68,8 +67,6 @@ class IntroPage extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const LoginPage()),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    const Center(child: GoogleSignInButton()),
                   ],
                 ),
               ),
