@@ -57,12 +57,7 @@ class IntroPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Receba chamados da sua região e feche cada serviço '
-                      'com contrato assinado.',
-                      style: AppTypography.body.copyWith(color: ink.textBody),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+                    
                     AppPrimaryButton(
                       label: 'Criar conta',
                       onPressed: () => Navigator.push(

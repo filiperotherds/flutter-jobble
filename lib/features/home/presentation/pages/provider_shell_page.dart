@@ -494,7 +494,7 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 8, bottom: 8, left: 4),
                                 child: Image.asset(
-                                  'assets/images/joberto_star.jpg',
+                                  'assets/images/joberto_thumbsup.png',
                                   fit: BoxFit.contain, // Contain no fundo branco fica perfeito
                                 ),
                               ),
