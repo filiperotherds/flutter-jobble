@@ -12,14 +12,20 @@ import 'package:flutter_tcc/core/theme/app_spacing.dart';
 import 'package:flutter_tcc/core/theme/app_typography.dart';
 import 'package:flutter_tcc/core/widgets/app_buttons.dart';
 import 'package:flutter_tcc/core/widgets/app_text_field.dart';
+import 'package:flutter_tcc/core/widgets/joberto_celebration.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter_tcc/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_tcc/features/auth/presentation/pages/signup_page.dart';
 import 'package:flutter_tcc/features/legal/presentation/pages/account_gate_page.dart';
 
+enum LoginField { email, password }
+
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  const LoginForm({super.key, this.onFieldFocus});
+
+  /// Avisa quando um campo ganha ou perde o foco, para a tela reagir.
+  final void Function(LoginField field, bool focused)? onFieldFocus;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -78,6 +84,8 @@ class _LoginFormState extends State<LoginForm> {
 
         if (!mounted) return;
 
+        loginCelebration.play();
+
         // Entrar não depende do cadastro completo: quem ainda não montou o
         // perfil profissional cai no app com o onboarding guiado por cima.
         Navigator.of(context).pushAndRemoveUntil(
@@ -96,23 +104,37 @@ class _LoginFormState extends State<LoginForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppTextField(
-                      controller: _emailController,
-                      label: 'E-mail',
-                      hint: 'exemplo@email.com',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.email],
+                    Focus(
+                      canRequestFocus: false,
+                      skipTraversal: true,
+                      onFocusChange: (focused) =>
+                          widget.onFieldFocus?.call(LoginField.email, focused),
+                      child: AppTextField(
+                        controller: _emailController,
+                        label: 'E-mail',
+                        hint: 'exemplo@email.com',
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.email],
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.gap),
-                    AppTextField(
-                      controller: _passwordController,
-                      label: 'Senha',
-                      hint: 'Sua senha',
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.password],
-                      onSubmitted: (_) => isLoading ? null : _submit(),
+                    Focus(
+                      canRequestFocus: false,
+                      skipTraversal: true,
+                      onFocusChange: (focused) => widget.onFieldFocus?.call(
+                        LoginField.password,
+                        focused,
+                      ),
+                      child: AppTextField(
+                        controller: _passwordController,
+                        label: 'Senha',
+                        hint: 'Sua senha',
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.password],
+                        onSubmitted: (_) => isLoading ? null : _submit(),
+                      ),
                     ),
                     Align(
                       alignment: Alignment.centerRight,

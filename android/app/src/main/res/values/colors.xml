@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mesma cor da abertura animada do Flutter, para a troca não piscar. -->
+    <color name="splash_background">#0D2F28</color>
+</resources>
