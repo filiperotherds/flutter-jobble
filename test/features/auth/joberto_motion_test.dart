@@ -50,13 +50,50 @@ void main() {
       );
     });
 
-    test('só os clipes que voltam ao aceno repetem', () {
+    test('gestos ficam na ação; reações tocam uma vez', () {
       expect(JobertoClip.waving.loops, isTrue);
       expect(JobertoClip.measuring.loops, isTrue);
+      expect(JobertoClip.hiding.loops, isTrue);
       expect(JobertoClip.working.loops, isTrue);
-      expect(JobertoClip.hiding.loops, isFalse);
       expect(JobertoClip.puzzled.loops, isFalse);
       expect(JobertoClip.success.loops, isFalse);
+    });
+  });
+
+  group('emenda entre os gestos do Joberto', () {
+    String video(String name) => 'assets/videos/joberto_$name.mp4';
+
+    test('vindo do aceno, o gesto entra do começo e fica no ciclo', () {
+      expect(JobertoClip.measuring.sequence(from: JobertoClip.waving), [
+        JobertoSegment(video('measure_in')),
+        JobertoSegment(video('measure_loop'), loops: true),
+      ]);
+    });
+
+    test('entre dois gestos, a entrada pula o aceno do começo', () {
+      expect(JobertoClip.hiding.sequence(from: JobertoClip.measuring), [
+        JobertoSegment(video('hide_cut')),
+        JobertoSegment(video('hide_loop'), loops: true),
+      ]);
+    });
+
+    test('a reação sem versão cortada entra do começo', () {
+      expect(JobertoClip.puzzled.sequence(from: JobertoClip.working), [
+        JobertoSegment(video('puzzled')),
+      ]);
+    });
+
+    test('de volta ao aceno, guarda a ferramenta antes de acenar', () {
+      expect(JobertoClip.waving.sequence(from: JobertoClip.working), [
+        JobertoSegment(video('work_out')),
+        JobertoSegment(video('wave_loop'), loops: true),
+      ]);
+    });
+
+    test('a reação que toca uma vez não tem ciclo', () {
+      expect(JobertoClip.success.sequence(), [
+        JobertoSegment(video('success')),
+      ]);
     });
   });
 

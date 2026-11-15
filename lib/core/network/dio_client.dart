@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_tcc/core/config/app_config.dart';
+import 'package:flutter_tcc/core/demo/demo_interceptor.dart';
 import 'package:flutter_tcc/core/services/token_service.dart';
 
 class DioClient {
@@ -17,6 +18,9 @@ class DioClient {
         headers: {'Accept': 'application/json'},
       ),
     );
+
+    // Modo demonstração: as telas se enchem de dados fictícios, sem servidor.
+    if (AppConfig.demoData) _dio.interceptors.add(DemoInterceptor());
 
     _dio.interceptors.add(
       InterceptorsWrapper(

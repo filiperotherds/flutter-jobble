@@ -53,6 +53,15 @@ class _Photo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        fit: fit,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
     return Image.network(
       url,
       fit: fit,

@@ -60,6 +60,12 @@ class AppConfig {
     defaultValue: kDebugMode,
   );
 
+  /// Modo demonstração: pedidos, conversas, avaliações e números fictícios
+  /// respondidos de dentro do app, sem tocar no servidor. Serve para ver as
+  /// telas cheias. Liga com `--dart-define=DEMO_DATA=true`; desligado, o app
+  /// se comporta como sempre.
+  static const bool demoData = bool.fromEnvironment('DEMO_DATA');
+
   /// Resumo da configuração ativa, para log de inicialização.
   static String describe() =>
       'AppConfig(apiBaseUrl: $apiBaseUrl, uploadsBaseUrl: $uploadsBaseUrl, '

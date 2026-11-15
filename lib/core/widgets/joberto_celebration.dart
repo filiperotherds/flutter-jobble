@@ -98,7 +98,11 @@ class _JobertoCelebrationState extends State<JobertoCelebration>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const JobertoStage(clip: JobertoClip.success, height: 360),
+                  const JobertoStage(
+                    clip: JobertoClip.success,
+                    height: 360,
+                    stillWhileLoading: false,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Tudo certo!',

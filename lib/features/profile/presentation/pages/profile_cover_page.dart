@@ -88,12 +88,11 @@ class _ProfileCoverPageState extends State<ProfileCoverPage> {
               // Sem folga lateral: a grade encosta nas bordas, como na
               // galeria do portfólio.
               padding: EdgeInsets.zero,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 2,
-                    crossAxisSpacing: 2,
-                  ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
+              ),
               itemCount: photos.length,
               itemBuilder: (context, index) {
                 final media = photos[index];
@@ -104,12 +103,17 @@ class _ProfileCoverPageState extends State<ProfileCoverPage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        media.fullUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            Container(color: colors.surfaceLight),
-                      ),
+                      // Fotos que já vêm no app (modo demonstração) abrem
+                      // direto, sem passar pela rede.
+                      if (media.fullUrl.startsWith('assets/'))
+                        Image.asset(media.fullUrl, fit: BoxFit.cover)
+                      else
+                        Image.network(
+                          media.fullUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              Container(color: colors.surfaceLight),
+                        ),
                       if (isCurrent)
                         Container(
                           decoration: BoxDecoration(

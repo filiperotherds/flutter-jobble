@@ -21,7 +21,8 @@ class QuotesApi {
 
   /// Monta a URL completa de uma foto a partir do caminho que o servidor deu.
   static String photoUrl(String path) {
-    if (path.startsWith('http')) return path;
+    // Fotos que já vêm no app (modo demonstração) não passam pelo servidor.
+    if (path.startsWith('http') || path.startsWith('assets/')) return path;
     final base = AppConfig.apiBaseUrl.endsWith('/')
         ? AppConfig.apiBaseUrl.substring(0, AppConfig.apiBaseUrl.length - 1)
         : AppConfig.apiBaseUrl;

@@ -38,6 +38,11 @@ import 'package:flutter_tcc/features/requests/domain/job_progress.dart';
 import 'package:flutter_tcc/features/requests/domain/job_progress_updates.dart';
 import 'package:flutter_tcc/features/requests/presentation/pages/provider_job_tracker_page.dart';
 import 'package:flutter_tcc/features/requests/presentation/widgets/service_stepper.dart';
+import 'package:flutter_tcc/features/home/presentation/widgets/service_order_ticket.dart';
+
+/// Uma ordem pronta para a lista: o ticket, a etapa em que está e se é a
+/// vez do profissional agir.
+typedef _Order = ({OrderStage stage, bool myTurn, Widget ticket});
 
 class ProviderShellPage extends StatefulWidget {
   const ProviderShellPage({super.key});
@@ -52,6 +57,9 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
   bool _isJobFinished = false;
   bool _isGabrielJobFinished = false;
   bool _isPendingJobDeclined = false;
+
+  /// A etapa escolhida no filtro das ordens; sem escolha, mostra todas.
+  OrderStage? _orderFilter;
   /// Calculado a partir das etapas concluídas e do prazo — ver [JobProgress].
   double get _marianaProgress => JobProgress.value;
 
@@ -326,14 +334,6 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
         builder: (context, _) {
           final quoteState = JobbleQuoteState.instance;
 
-          final activeJobs = <Widget>[];
-            if (!_isJobFinished) {
-              activeJobs.add(_buildInProgressCard());
-            }
-            if (quoteState.isClientSigned && !_isGabrielJobFinished) {
-              activeJobs.add(_buildGabrielInProgressCard(quoteState));
-            }
-
             // Verde quando aberto, vermelho quando fechado: a cor sozinha já
             // diz o estado, sem depender de ler o rótulo.
             final statusColor = _acceptingOrders ? Colors.green : colors.error;
@@ -450,10 +450,9 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                 ),
               ),
               
-              SizedBox(height: AppSpacing.lg),
-
-              
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
+              _buildOrdersSection(quoteState),
+              const SizedBox(height: AppSpacing.xs),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Material(
@@ -558,53 +557,6 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Trabalhos em andamento: os contratos do servidor e os cards
-              // locais na mesma seção, para o número do título ser a conta
-              // certa do que está listado embaixo dele.
-              if (_contractsCubit != null)
-                BlocBuilder<ServiceContractsCubit, ServiceContractsState>(
-                  bloc: _contractsCubit,
-                  builder: (context, state) => _buildJobsSection([
-                    for (final contract in state.inProgress)
-                      _buildInProgressCard(contract: contract),
-                    ...activeJobs,
-                  ]),
-                )
-              else
-                _buildJobsSection(activeJobs),
-
-              // Aguardando retorno do cliente. Entram aqui os pedidos que já
-              // tiveram retorno do profissional — uma mensagem ou o orçamento
-              // — e ainda não viraram contrato. É também onde o orçamento
-              // assinado pelo cliente volta, para o profissional confirmar.
-              if (_requestsCubit != null)
-                BlocBuilder<QuoteRequestsCubit, QuoteRequestsState>(
-                  bloc: _requestsCubit,
-                  builder: (context, state) {
-                    return _buildAwaitingSection(quoteState, [
-                      for (final request in state.inProgress)
-                        _buildAwaitingClientCard(quoteState, request: request),
-                    ]);
-                  },
-                )
-              else
-                _buildAwaitingSection(quoteState, const []),
-
-              // Pedidos de orçamento aguardando resposta.
-              if (_requestsCubit != null)
-                BlocBuilder<QuoteRequestsCubit, QuoteRequestsState>(
-                  bloc: _requestsCubit,
-                  builder: (context, state) {
-                    return _buildPendingSection(quoteState, [
-                      for (final request in state.waiting)
-                        _buildPendingRequestCard(quoteState, request: request),
-                    ]);
-                  },
-                )
-              else
-                _buildPendingSection(quoteState, const []),
                 const SizedBox(height: 48),
 
 
@@ -816,118 +768,76 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     if (confirmed == true) await _requestsCubit?.decline(request.id);
   }
 
-  Widget _buildPendingRequestCard(
-    JobbleQuoteState quoteState, {
-    QuoteRequest? request,
-  }) {
-    final title = request?.title ??
-        (quoteState.isQuoteSent ? 'Pintura de Fachada e Muro' : 'Pintura Residencial (20m²)');
-    final client = request != null
-        ? 'Cliente: ${request.client.display}'
-        : (quoteState.isQuoteSent ? 'Cliente: Lucas Silva • Bairro Pinheiros' : 'Cliente: Gabriel • Bairro Jardim Botânico');
-    final time = request != null
-        ? _elapsed(request.createdAt)
-        : (quoteState.isQuoteSent ? 'Há 12 min' : 'Há 5 min');
+  /// O número curto da ordem.
+  ///
+  /// O servidor ainda não numera os pedidos; até lá o código sai do fim do
+  /// identificador do pedido. O contrato usa o mesmo identificador, então a
+  /// ordem mantém o número enquanto muda de etapa.
+  static String _orderCode(String id) {
+    final clean = id.replaceAll(RegExp('[^A-Za-z0-9]'), '');
+    final tail = clean.length <= 4 ? clean : clean.substring(clean.length - 4);
+    return tail.toUpperCase();
+  }
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.sparkles, size: 12, color: Color(0xFF475569)),
-                    SizedBox(width: 4),
-                    Text(
-                      'Novo Pedido',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF475569),
-                        fontWeight: FontWeight.bold,
-                      ),
+  static final _money = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
+
+  /// Pedido novo, à espera da resposta do profissional.
+  ///
+  /// Com [request], é um pedido real; sem ele, a demonstração de sempre. O
+  /// desenho não muda entre os dois.
+  _Order _newOrder(JobbleQuoteState quoteState, {QuoteRequest? request}) {
+    final lucas = quoteState.isQuoteSent;
+
+    return (
+      stage: OrderStage.request,
+      myTurn: true,
+      ticket: ServiceOrderTicket(
+        code: request != null
+            ? _orderCode(request.id)
+            : (lucas ? '0143' : '0142'),
+        note: request != null
+            ? _elapsed(request.createdAt)
+            : (lucas ? 'Há 12 min' : 'Há 5 min'),
+        stamp: 'Nova',
+        tone: OrderTone.yourTurn,
+        stage: OrderStage.request,
+        title:
+            request?.title ??
+            (lucas ? 'Pintura de Fachada e Muro' : 'Pintura Residencial (20m²)'),
+        client: request?.client.display ?? (lucas ? 'Lucas Silva' : 'Gabriel'),
+        place: request != null
+            ? null
+            : (lucas ? 'Bairro Pinheiros' : 'Bairro Jardim Botânico'),
+        stub: Row(
+          children: [
+            SizedBox(
+              width: 104,
+              child: TicketSecondaryButton(
+                label: 'Recusar',
+                onPressed: request != null
+                    ? () => _declineRequest(request)
+                    : _showDeclineJobConfirmation,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: TicketPrimaryButton(
+                label: 'Analisar pedido',
+                trailingIcon: LucideIcons.arrow_right,
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProviderRequestDetailPage(request: request),
                     ),
-                  ],
-                ),
+                  );
+                  // Responder ou recusar lá dentro muda a fila daqui.
+                  _requestsCubit?.load(silent: true);
+                },
               ),
-              Text(time, style: AppTypography.caption.copyWith(color: Colors.grey[600])),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            client,
-            style: AppTypography.caption.copyWith(color: Colors.grey[700]),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: request != null
-                      ? () => _declineRequest(request)
-                      : _showDeclineJobConfirmation,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Recusar', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ProviderRequestDetailPage(request: request),
-                      ),
-                    );
-                    // Responder ou recusar lá dentro muda a fila daqui.
-                    _requestsCubit?.load(silent: true);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1C574A),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Analisar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -954,7 +864,9 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     return 'Faltam $days dias · entrega em $end';
   }
 
-  Widget _buildInProgressCard({ServiceContract? contract}) {
+  _Order _serviceOrder({ServiceContract? contract}) {
+    final colors = context.colors;
+
     // O período é o prazo que as duas partes assinaram na proposta. Sem datas
     // combinadas, resta a abertura do contrato.
     final period = contract == null
@@ -969,242 +881,316 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     // elas, e aí o lugar é da régua de passos.
     final schedule = contract?.scheduleProgress;
     final progress = schedule ?? _marianaProgress;
-    final title = contract?.title ?? 'Reparo de Infiltração';
-    final client = contract != null
-        ? 'Cliente: ${contract.client.display}'
-        : 'Cliente: Mariana • R. das Flores, 123';
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C574A).withValues(alpha: 0.5), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1C574A).withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const ProviderJobTrackerPage(),
+    return (
+      stage: OrderStage.service,
+      myTurn: false,
+      ticket: ServiceOrderTicket(
+        code: contract == null
+            ? '0139'
+            : _orderCode(
+                contract.proposal?.quoteRequestId ?? contract.proposalId,
               ),
-            );
-            // As etapas podem ter mudado lá dentro; a barra é recalculada.
-            if (mounted) setState(() {});
-          },
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        note: period,
+        stamp: 'Em execução',
+        tone: OrderTone.running,
+        stage: OrderStage.service,
+        title: contract?.title ?? 'Reparo de Infiltração',
+        client: contract?.client.display ?? 'Mariana',
+        place: contract == null ? 'R. das Flores, 123' : null,
+        onTap: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ProviderJobTrackerPage(),
+            ),
+          );
+          // As etapas podem ter mudado lá dentro; a barra é recalculada.
+          if (mounted) setState(() {});
+        },
+        stub: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C574A).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        period,
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text('Em andamento', style: AppTypography.caption.copyWith(color: Colors.grey[800], fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 Text(
-                  title,
-                  style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
+                  schedule != null ? 'Prazo do serviço' : 'Progresso do serviço',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textBody,
+                  ),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  client,
-                  style: AppTypography.caption.copyWith(color: Colors.grey[700]),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      schedule != null ? 'Prazo do Serviço' : 'Progresso do Serviço',
-                      style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                    ),
-                    Text('${(progress * 100).toInt()}%', style: AppTypography.caption.copyWith(color: Colors.grey[800], fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                if (schedule != null) ...[
-                  // Acompanhamento por data: barra, que é o que mostra o
-                  // tempo correndo. Uma régua de passos aqui ficaria parada
-                  // enquanto os dias passam.
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: schedule,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1C574A)),
-                      minHeight: 8,
-                    ),
+                  '${(progress * 100).toInt()}%',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _scheduleNote(contract!),
-                    style: AppTypography.caption.copyWith(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ] else
-                  // Mesmos passos da tela de acompanhamento, sem os nomes: aqui
-                  // o card so precisa mostrar onde o servico esta.
-                  ServiceStepper(
-                    steps: JobProgress.tasks,
-                    showLabels: false,
-                  ),
-                const SizedBox(height: 12),
-                // O card inteiro já abria o acompanhamento, mas nada na tela
-                // dizia isso: a ferramenta de publicar fotos e comentários do
-                // andamento ficava escondida atras de um toque sem convite.
-                _buildProgressToolHint(),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          final conversationId = contract?.conversationId;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => conversationId != null
-                                  ? QuoteChatPage(
-                                      conversationId: conversationId,
-                                      counterpartName:
-                                          contract!.client.display,
-                                      counterpartAvatarUrl:
-                                          contract.client.avatarUrl,
-                                      subtitle: contract.title,
-                                      viewerIsClient: false,
-                                    )
-                                  : const ChatPage(
-                                      providerName: 'Mariana',
-                                      providerImage: 'assets/images/user2.jpg',
-                                    ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(LucideIcons.message_circle, size: 16, color: Color(0xFF475569)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        label: const Text('Mensagem', style: TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () =>
-                            _showFinishJobConfirmation(contract: contract),
-                        icon: const Icon(LucideIcons.circle_check, size: 16, color: Colors.white),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1C574A),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        label: const Text('Finalizar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 10),
+            if (schedule != null) ...[
+              // Acompanhamento por data: barra, que é o que mostra o tempo
+              // correndo. Uma régua de passos aqui ficaria parada enquanto os
+              // dias passam.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: schedule,
+                  backgroundColor: colors.surfaceStrong,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.inverse),
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _scheduleNote(contract!),
+                style: AppTypography.caption.copyWith(
+                  fontSize: 11,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ] else
+              // Mesmos passos da tela de acompanhamento, sem os nomes: aqui o
+              // ticket só precisa mostrar onde o serviço está.
+              ServiceStepper(steps: JobProgress.tasks, showLabels: false),
+            const SizedBox(height: AppSpacing.sm),
+            // O ticket inteiro já abre o acompanhamento, mas nada na tela
+            // dizia isso: a ferramenta de publicar fotos e comentários do
+            // andamento ficava escondida atrás de um toque sem convite.
+            _buildProgressToolHint(),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: TicketSecondaryButton(
+                    label: 'Mensagem',
+                    icon: LucideIcons.message_circle,
+                    onPressed: () {
+                      final conversationId = contract?.conversationId;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => conversationId != null
+                              ? QuoteChatPage(
+                                  conversationId: conversationId,
+                                  counterpartName: contract!.client.display,
+                                  counterpartAvatarUrl:
+                                      contract.client.avatarUrl,
+                                  subtitle: contract.title,
+                                  viewerIsClient: false,
+                                )
+                              : const ChatPage(
+                                  providerName: 'Mariana',
+                                  providerImage: 'assets/images/user2.jpg',
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: TicketPrimaryButton(
+                    label: 'Finalizar',
+                    icon: LucideIcons.circle_check,
+                    onPressed: () =>
+                        _showFinishJobConfirmation(contract: contract),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
-  /// As seções do painel contam o que mostram.
+
+  /// As ordens de serviço do painel: pedidos novos, orçamentos em negociação
+  /// e serviços em execução numa lista só.
   ///
-  /// O número do título sai do tamanho da lista de cards, e não de um valor
-  /// escrito à mão: some um contrato, o título acompanha. Os cards locais de
-  /// demonstração entram na mesma conta, porque também são cards na tela.
-  Widget _buildJobsSection(List<Widget> cards) {
-    if (cards.isEmpty) return const SizedBox.shrink();
+  /// As que esperam o profissional vêm primeiro, e os números dos filtros
+  /// saem do tamanho das listas, não de valores escritos à mão: some um
+  /// pedido, o contador acompanha. As ordens locais de demonstração entram na
+  /// mesma conta, porque também estão na tela.
+  Widget _buildOrdersSection(JobbleQuoteState quoteState) {
+    final requestsCubit = _requestsCubit;
+    final contractsCubit = _contractsCubit;
+    if (requestsCubit == null || contractsCubit == null) {
+      return _buildOrders(quoteState);
+    }
 
-    return _buildExpandableSection(
-      title: 'Trabalhos em andamento (${cards.length})',
-      dotColor: const Color(0xFF1C574A),
-      initiallyExpanded: true,
-      children: [
-        for (final card in cards)
-          Padding(
-            padding: const EdgeInsets.only(
-              bottom: AppSpacing.md,
-              left: AppSpacing.md,
-              right: AppSpacing.md,
+    return BlocBuilder<QuoteRequestsCubit, QuoteRequestsState>(
+      bloc: requestsCubit,
+      builder: (context, requests) =>
+          BlocBuilder<ServiceContractsCubit, ServiceContractsState>(
+            bloc: contractsCubit,
+            builder: (context, contracts) => _buildOrders(
+              quoteState,
+              requests: requests,
+              contracts: contracts,
             ),
-            child: card,
           ),
-      ],
     );
   }
 
-  Widget _buildAwaitingSection(JobbleQuoteState quoteState, List<Widget> live) {
-    final cards = [
-      ...live,
+  Widget _buildOrders(
+    JobbleQuoteState quoteState, {
+    QuoteRequestsState? requests,
+    ServiceContractsState? contracts,
+  }) {
+    final colors = context.colors;
+
+    final orders = <_Order>[
+      for (final request in requests?.waiting ?? const <QuoteRequest>[])
+        _newOrder(quoteState, request: request),
+      if (!_isPendingJobDeclined) _newOrder(quoteState),
+
+      // Pedidos que já tiveram retorno do profissional — uma mensagem ou o
+      // orçamento — e ainda não viraram contrato. É também onde o orçamento
+      // assinado pelo cliente volta, para o profissional confirmar.
+      for (final request in requests?.inProgress ?? const <QuoteRequest>[])
+        _quoteOrder(quoteState, request: request),
       if (quoteState.isQuoteSent && !quoteState.isClientSigned)
-        _buildAwaitingClientCard(quoteState),
-    ];
-    if (cards.isEmpty) return const SizedBox.shrink();
+        _quoteOrder(quoteState),
 
-    return _buildExpandableSection(
-      title: 'Aguardando retorno do cliente (${cards.length})',
-      dotColor: const Color(0xFF475569),
-      initiallyExpanded: true,
+      for (final contract in contracts?.inProgress ?? const <ServiceContract>[])
+        _serviceOrder(contract: contract),
+      if (!_isJobFinished) _serviceOrder(),
+      if (quoteState.isClientSigned && !_isGabrielJobFinished)
+        _gabrielServiceOrder(quoteState),
+    ];
+
+    final waitingForMe = orders.where((order) => order.myTurn).length;
+    final sorted = [
+      ...orders.where((order) => order.myTurn),
+      ...orders.where((order) => !order.myTurn),
+    ];
+    final filter = _orderFilter;
+    final visible = filter == null
+        ? sorted
+        : sorted.where((order) => order.stage == filter).toList();
+
+    int count(OrderStage stage) =>
+        orders.where((order) => order.stage == stage).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final card in cards) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: card,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ordens de serviço',
+                style: AppTypography.h2.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                switch (waitingForMe) {
+                  0 => orders.isEmpty ? 'Nenhuma ordem aberta' : 'Tudo em dia',
+                  1 => '1 esperando você',
+                  _ => '$waitingForMe esperando você',
+                },
+                style: AppTypography.caption.copyWith(
+                  color: waitingForMe > 0
+                      ? colors.accentText
+                      : colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            children: [
+              _buildOrderFilter('Todas', orders.length, null),
+              _buildOrderFilter(
+                'Novas',
+                count(OrderStage.request),
+                OrderStage.request,
+              ),
+              _buildOrderFilter(
+                'Orçamento',
+                count(OrderStage.quote),
+                OrderStage.quote,
+              ),
+              _buildOrderFilter(
+                'Execução',
+                count(OrderStage.service),
+                OrderStage.service,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (visible.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.lg,
+            ),
+            child: Text(
+              orders.isEmpty
+                  ? 'Quando um cliente pedir um orçamento, a ordem aparece '
+                        'aqui. Fique aberto para receber pedidos.'
+                  : 'Nenhuma ordem nesta etapa.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          )
+        else
+          for (final order in visible)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: order.ticket,
+            ),
       ],
     );
   }
 
-  Widget _buildPendingSection(JobbleQuoteState quoteState, List<Widget> live) {
-    final cards = [
-      ...live,
-      if (!_isPendingJobDeclined) _buildPendingRequestCard(quoteState),
-    ];
-    if (cards.isEmpty) return const SizedBox.shrink();
+  Widget _buildOrderFilter(String label, int count, OrderStage? stage) {
+    final colors = context.colors;
+    final selected = _orderFilter == stage;
 
-    return _buildExpandableSection(
-      title: 'Aguardando orçamento (${cards.length})',
-      dotColor: const Color(0xFF475569),
-      initiallyExpanded: true,
-      children: [
-        for (final card in cards) ...[
-          card,
-          const SizedBox(height: AppSpacing.md),
-        ],
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.xs),
+      child: Material(
+        color: selected ? colors.inverse : colors.surface,
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: selected ? colors.inverse : colors.borderStrong,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => setState(() => _orderFilter = stage),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Text(
+              '$label $count',
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                color: selected ? colors.onInverse : colors.textBody,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1293,254 +1279,172 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     }
   }
 
-  /// O card de "aguardando retorno do cliente".
+  /// A ordem em negociação: o profissional já respondeu e o contrato ainda
+  /// não abriu.
   ///
-  /// Com [request], é um pedido real que já teve retorno do profissional. Ele
-  /// tem três momentos, e o card muda só o texto e o botão principal entre
-  /// eles: mensagem enviada sem orçamento ainda, orçamento à espera da
-  /// assinatura do cliente, e — depois que o cliente assina — a vez do
-  /// profissional confirmar, que é o que abre o contrato.
-  Widget _buildAwaitingClientCard(
-    JobbleQuoteState quoteState, {
-    QuoteRequest? request,
-  }) {
+  /// Com [request], é um pedido real. Ele tem três momentos, e o ticket muda
+  /// só o carimbo, o texto e o botão principal entre eles: mensagem enviada
+  /// sem orçamento ainda, orçamento à espera da assinatura do cliente, e —
+  /// depois que o cliente assina — a vez do profissional confirmar, que é o
+  /// que abre o contrato.
+  _Order _quoteOrder(JobbleQuoteState quoteState, {QuoteRequest? request}) {
     final colors = context.colors;
     final proposal = request?.latestProposal;
     final clientName = request?.client.display ?? 'Gabriel';
 
-    // Depois que o cliente assina, quem o card espera é o próprio
-    // profissional: o selo deixa de ser de espera e vira convite.
+    // Depois que o cliente assina, quem a ordem espera é o próprio
+    // profissional: o carimbo deixa de ser de espera e vira convite.
     final myTurn = proposal?.awaitsProvider ?? false;
+    final needsQuote = request != null && proposal == null;
+    final statusColor = _awaitingColor(request, proposal);
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      myTurn ? LucideIcons.badge_check : LucideIcons.clock,
-                      size: 13,
-                      color: const Color(0xFF475569),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      myTurn
-                          ? 'Sua vez de assinar'
-                          : 'Aguardando $clientName',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF475569),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                request == null ? 'Enviado hoje' : _elapsed(request.createdAt),
-                style: AppTypography.caption.copyWith(color: Colors.grey[600]),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            request?.title ?? quoteState.serviceTitle,
-            style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            request != null
-                ? 'Cliente: $clientName'
-                : 'Cliente: ${quoteState.clientName} • ${quoteState.clientAddress}',
-            style: AppTypography.caption.copyWith(color: Colors.grey[700]),
-          ),
-          const SizedBox(height: 12),
+    final items = proposal != null ? _itemsOf(proposal) : quoteState.items;
+    final total = proposal?.amount ?? quoteState.total;
+    final deadline = proposal != null
+        ? '${proposal.deadlineDays} dias úteis'
+        : quoteState.prazoEntrega;
+    final warranty = proposal != null
+        ? '${proposal.warrantyDays} dias'
+        : quoteState.garantia;
+    final notes = proposal?.notes ?? quoteState.observacoes;
 
-          // Painel resumo da proposta enviada
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (request == null || proposal != null)
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Text(
-                        proposal != null
-                            ? 'R\$ ${proposal.amount.toStringAsFixed(2)}'
-                            : 'R\$ ${quoteState.total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Color(0xFF475569),
+    return (
+      stage: OrderStage.quote,
+      myTurn: myTurn,
+      ticket: ServiceOrderTicket(
+        code: request != null ? _orderCode(request.id) : '0142',
+        note: request == null ? 'Enviado hoje' : _elapsed(request.createdAt),
+        stamp: myTurn ? 'Sua vez' : 'Aguardando',
+        tone: myTurn ? OrderTone.yourTurn : OrderTone.waiting,
+        stage: OrderStage.quote,
+        title: request?.title ?? quoteState.serviceTitle,
+        client: request != null ? clientName : quoteState.clientName,
+        place: request != null ? null : quoteState.clientAddress,
+        stub: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!needsQuote) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Valor do orçamento',
+                          style: AppTypography.caption.copyWith(
+                            fontSize: 11.5,
+                            color: colors.textSecondary,
+                          ),
                         ),
-                      ),
-                      const Text('•', style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 12)),
-                      Text(
-                        proposal != null
-                            ? 'Prazo: ${proposal.deadlineDays} dias úteis'
-                            : 'Prazo: ${quoteState.prazoEntrega}',
-                        style: AppTypography.caption.copyWith(fontSize: 11, color: Colors.grey[800]),
-                      ),
-                      const Text('•', style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 12)),
-                      Text(
-                        proposal != null
-                            ? 'Garantia: ${proposal.warrantyDays} dias'
-                            : 'Garantia: ${quoteState.garantia}',
-                        style: AppTypography.caption.copyWith(fontSize: 11, color: Colors.grey[800]),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          _money.format(total),
+                          style: AppTypography.numeric.copyWith(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                if (request == null || proposal != null)
-                  const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      _awaitingIcon(request, proposal),
-                      size: 14,
-                      color: _awaitingColor(request, proposal),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Prazo: $deadline\nGarantia: $warranty',
+                    textAlign: TextAlign.right,
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 11.5,
+                      color: colors.textBody,
+                      height: 1.45,
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _awaitingLine(request, proposal, quoteState, clientName),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: _awaitingColor(request, proposal),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+            ],
+            Row(
+              children: [
+                Icon(
+                  _awaitingIcon(request, proposal),
+                  size: 14,
+                  color: statusColor,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    _awaitingLine(request, proposal, quoteState, clientName),
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 11.5,
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-
-          // Botões de Ação
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Três caminhos, um botão: assinar de volta quando o
-                    // cliente já assinou, montar o orçamento quando ainda não
-                    // há um, e ver o que foi enviado no resto do tempo.
-                    if (proposal != null && proposal.awaitsProvider) {
-                      _signProposal(proposal);
-                      return;
-                    }
-                    if (request != null && proposal == null) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ProviderQuoteGeneratorPage(quoteRequest: request),
-                        ),
-                      );
-                      return;
-                    }
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ProviderQuotePreviewPage(
-                          items: proposal != null
-                              ? _itemsOf(proposal)
-                              : quoteState.items,
-                          total: proposal?.amount ?? quoteState.total,
-                          prazoEntrega: proposal != null
-                              ? '${proposal.deadlineDays} dias úteis'
-                              : quoteState.prazoEntrega,
-                          condicaoPagamento: quoteState.condicaoPagamento,
-                          garantia: proposal != null
-                              ? '${proposal.warrantyDays} dias'
-                              : quoteState.garantia,
-                          observacoes: proposal?.notes ?? quoteState.observacoes,
-                          isReadOnly: true,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    myTurn
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: TicketPrimaryButton(
+                    label: myTurn
+                        ? 'Assinar'
+                        : (needsQuote ? 'Enviar proposta' : 'Ver orçamento'),
+                    icon: myTurn
                         ? LucideIcons.pen_tool
-                        : (request != null && proposal == null
+                        : (needsQuote
                               ? LucideIcons.file_plus
                               : LucideIcons.file_text),
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    myTurn
-                        ? 'Assinar'
-                        : (request != null && proposal == null
-                              ? 'Enviar Proposta'
-                              : 'Ver Orçamento'),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF475569),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
+                    onPressed: () {
+                      // Três caminhos, um botão: assinar de volta quando o
+                      // cliente já assinou, montar o orçamento quando ainda
+                      // não há um, e ver o que foi enviado no resto do tempo.
+                      if (proposal != null && proposal.awaitsProvider) {
+                        _signProposal(proposal);
+                        return;
+                      }
+                      if (request != null && proposal == null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ProviderQuoteGeneratorPage(
+                              quoteRequest: request,
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ProviderQuotePreviewPage(
+                            items: items,
+                            total: total,
+                            prazoEntrega: deadline,
+                            condicaoPagamento: quoteState.condicaoPagamento,
+                            garantia: warranty,
+                            observacoes: notes,
+                            isReadOnly: true,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              SizedBox(width: AppSpacing.sm),
-              Expanded(
-                flex: 3,
-                child: OutlinedButton.icon(
-                  onPressed: proposal == null && request != null
+                const SizedBox(width: AppSpacing.xs),
+                TicketSecondaryButton(
+                  icon: LucideIcons.download,
+                  tooltip: 'Baixar PDF',
+                  onPressed: needsQuote
                       ? null
                       : () {
                           QuotePdfService.generateAndDownloadPdf(
-                            items: proposal != null
-                                ? _itemsOf(proposal)
-                                : quoteState.items,
-                            total: proposal?.amount ?? quoteState.total,
-                            prazoEntrega: proposal != null
-                                ? '${proposal.deadlineDays} dias úteis'
-                                : quoteState.prazoEntrega,
+                            items: items,
+                            total: total,
+                            prazoEntrega: deadline,
                             condicaoPagamento: quoteState.condicaoPagamento,
-                            garantia: proposal != null
-                                ? '${proposal.warrantyDays} dias'
-                                : quoteState.garantia,
-                            observacoes:
-                                proposal?.notes ?? quoteState.observacoes,
+                            garantia: warranty,
+                            observacoes: notes,
                             isProviderSigned: proposal != null
                                 ? proposal.providerSignedAt != null
                                 : quoteState.isProviderSigned,
@@ -1555,291 +1459,246 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
                                 quoteState.clientSignaturePoints,
                           );
                         },
-                  icon: const Icon(LucideIcons.download, size: 16, color: Color(0xFF4C1D95)),
-                  label: const Text(
-                    'Baixar PDF',
-                    style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFDDD6FE)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 ),
-              ),
-              SizedBox(width: AppSpacing.sm),
-              OutlinedButton(
-                onPressed: () {
-                  final conversationId = request?.conversationId;
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => conversationId != null
-                          ? QuoteChatPage(
-                              conversationId: conversationId,
-                              counterpartName: clientName,
-                              counterpartAvatarUrl: request!.client.avatarUrl,
-                              subtitle: request.title,
-                              viewerIsClient: false,
-                            )
-                          : const ChatPage(
-                              providerName: 'Gabriel',
-                              providerImage: 'assets/images/user1.jpg',
-                            ),
-                    ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  fixedSize: const Size(44, 44),
-                  padding: EdgeInsets.zero,
-                  side: const BorderSide(color: Color(0xFFDDD6FE)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                const SizedBox(width: AppSpacing.xs),
+                TicketSecondaryButton(
+                  icon: LucideIcons.message_circle,
+                  tooltip: 'Mensagem',
+                  onPressed: () {
+                    final conversationId = request?.conversationId;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => conversationId != null
+                            ? QuoteChatPage(
+                                conversationId: conversationId,
+                                counterpartName: clientName,
+                                counterpartAvatarUrl: request!.client.avatarUrl,
+                                subtitle: request.title,
+                                viewerIsClient: false,
+                              )
+                            : const ChatPage(
+                                providerName: 'Gabriel',
+                                providerImage: 'assets/images/user1.jpg',
+                              ),
+                      ),
+                    );
+                  },
                 ),
-                child: const Icon(LucideIcons.message_circle, size: 18, color: Color(0xFF475569)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+              ],
+            ),
 
-          // Atalho interativo para simular aceite. Só na demonstração: com
-          // pedido de verdade quem assina é o cliente, no app dele.
-          if (request == null) Center(
-            child: InkWell(
-              onTap: () {
-                quoteState.signByClient();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(LucideIcons.circle_check, color: Colors.white),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Gabriel assinou o contrato! Serviço iniciado e adicionado em Trabalhos em Andamento.',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+            // Atalho para simular o aceite. Só na demonstração: com pedido de
+            // verdade quem assina é o cliente, no app dele.
+            if (request == null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: InkWell(
+                    onTap: () {
+                      quoteState.signByClient();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.circle_check,
+                                color: Colors.white,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Gabriel assinou o contrato! A ordem entrou em execução.',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 4),
+                          behavior: SnackBarBehavior.floating,
                         ),
-                      ],
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 4),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.sparkles, size: 13, color: Color(0xFF7C3AED)),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Simular aceite do Gabriel (iniciar serviço)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF475569),
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
+                      child: Text(
+                        'Simular aceite do Gabriel (demonstração)',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 11,
+                          color: colors.textSecondary,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildGabrielInProgressCard(JobbleQuoteState quoteState) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '15 Out - 18 Out',
+  /// A ordem de demonstração do Gabriel, depois do aceite simulado.
+  _Order _gabrielServiceOrder(JobbleQuoteState quoteState) {
+    final colors = context.colors;
+
+    return (
+      stage: OrderStage.service,
+      myTurn: false,
+      ticket: ServiceOrderTicket(
+        code: '0142',
+        note: '15 Out - 18 Out',
+        stamp: 'Em execução',
+        tone: OrderTone.running,
+        stage: OrderStage.service,
+        title: quoteState.serviceTitle,
+        client: quoteState.clientName,
+        place: quoteState.clientAddress,
+        stub: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Progresso do serviço',
                   style: AppTypography.caption.copyWith(
-                    color: Colors.green[800],
                     fontWeight: FontWeight.bold,
+                    color: colors.textBody,
                   ),
                 ),
-              ),
-              Text(
-                'Em andamento',
-                style: AppTypography.caption.copyWith(
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.bold,
+                Text(
+                  '15%',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            quoteState.serviceTitle,
-            style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Cliente: ${quoteState.clientName} • ${quoteState.clientAddress}',
-            style: AppTypography.caption.copyWith(color: Colors.grey[700]),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Progresso do Serviço', style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[800])),
-              Text('15%', style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: 0.15,
-              minHeight: 8,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green[600]!),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ChatPage(
-                          providerName: 'Gabriel',
-                          providerImage: 'assets/images/user1.jpg',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(LucideIcons.message_circle, size: 16, color: Colors.green),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.green),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  label: const Text('Mensagem', style: TextStyle(color: Colors.green)),
-                ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: 0.15,
+                minHeight: 8,
+                backgroundColor: colors.surfaceStrong,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.inverse),
               ),
-              SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) {
-                        return Container(
-                          padding: EdgeInsets.all(AppSpacing.xl),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: TicketSecondaryButton(
+                    label: 'Mensagem',
+                    icon: LucideIcons.message_circle,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ChatPage(
+                            providerName: 'Gabriel',
+                            providerImage: 'assets/images/user1.jpg',
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                
-                              SizedBox(height: AppSpacing.xl),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
-                                child: const Icon(LucideIcons.circle_check, color: Colors.green, size: 48),
-                              ),
-                              SizedBox(height: AppSpacing.lg),
-                              Text('Finalizar Serviço', style: AppTypography.h2.copyWith(fontWeight: FontWeight.bold)),
-                              SizedBox(height: AppSpacing.sm),
-                              Text(
-                                'Tem certeza que deseja marcar este serviço de Pintura Residencial como concluído?\nO cliente Gabriel receberá a notificação para liberação do pagamento e avaliação.',
-                                textAlign: TextAlign.center,
-                                style: AppTypography.body.copyWith(color: Colors.grey[700], height: 1.5),
-                              ),
-                              SizedBox(height: AppSpacing.xxl),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                        side: BorderSide(color: Colors.grey[300]!),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      ),
-                                      child: Text('Cancelar', style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                                    ),
-                                  ),
-                                  SizedBox(width: AppSpacing.md),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                        setState(() {
-                                          _isGabrielJobFinished = true;
-                                        });
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Serviço concluído com sucesso!'),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        elevation: 0,
-                                      ),
-                                      child: Text('Sim, Finalizar', style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: AppSpacing.md),
-                            ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: TicketPrimaryButton(
+                    label: 'Finalizar',
+                    icon: LucideIcons.circle_check,
+                    onPressed: _showFinishGabrielConfirmation,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFinishGabrielConfirmation() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              SizedBox(height: AppSpacing.xl),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: const Icon(LucideIcons.circle_check, color: Colors.green, size: 48),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              Text('Finalizar Serviço', style: AppTypography.h2.copyWith(fontWeight: FontWeight.bold)),
+              SizedBox(height: AppSpacing.sm),
+              Text(
+                'Tem certeza que deseja marcar este serviço de Pintura Residencial como concluído?\nO cliente Gabriel receberá a notificação para liberação do pagamento e avaliação.',
+                textAlign: TextAlign.center,
+                style: AppTypography.body.copyWith(color: Colors.grey[700], height: 1.5),
+              ),
+              SizedBox(height: AppSpacing.xxl),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text('Cancelar', style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        setState(() {
+                          _isGabrielJobFinished = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Serviço concluído com sucesso!'),
+                            backgroundColor: Colors.green,
                           ),
                         );
                       },
-                    );
-                  },
-                  icon: const Icon(LucideIcons.circle_check, size: 16, color: Colors.white),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                      child: Text('Sim, Finalizar', style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
                   ),
-                  label: const Text('Finalizar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
+                ],
               ),
+              SizedBox(height: AppSpacing.md),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1933,38 +1792,6 @@ class _ProviderShellPageState extends State<ProviderShellPage> {
     return Center(child: Text(title));
   }
 
-  Widget _buildExpandableSection({
-    required String title,
-    required Color dotColor,
-    required List<Widget> children,
-    bool initiallyExpanded = true,
-  }) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: AppTypography.h3.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        children: children,
-      ),
-    );
-  }
 
   /// Faixa que anuncia o acompanhamento do serviço dentro do card.
   ///
